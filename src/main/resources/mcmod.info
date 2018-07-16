@@ -1,0 +1,16 @@
+[
+{
+  "modid": "timecontrol",
+  "name": "TimeControl",
+  "description": "Take control over Minecraft's day-night cycle",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["Unixkitty"],
+  "credits": "",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]

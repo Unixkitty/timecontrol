@@ -1,0 +1,89 @@
+package com.unixkitty.timecontrol;
+
+import net.minecraft.world.World;
+
+import java.math.BigDecimal;
+import java.util.Collections;
+
+public class Numbers
+{
+    static final long night_start = 12000L;
+    private static final double day_multiplier = multiplier(Config.dayLength());
+    private static final double night_multiplier = multiplier(Config.nightLength());
+    private static final int irl_hour_offset = 6;
+    private static final double irl_minute_multiplier = 16.94;
+
+    public static double multiplier(long worldtime)
+    {
+        return isDaytime(worldtime) ? day_multiplier : night_multiplier;
+    }
+
+    public static long customtime(long worldtime)
+    {
+        return (long) (worldtime * multiplier(worldtime));
+    }
+
+    private static long worldtime(long customtime, double multiplier)
+    {
+        return (long) (customtime / multiplier);
+    }
+
+    public static void setWorldtime(World world, long customtime, double multiplier)
+    {
+        world.provider.setWorldTime(worldtime(customtime, multiplier));
+    }
+
+    public static long systemtime(int hour, int minute, int day)
+    {
+        hour = (hour - irl_hour_offset + 24) % 24 * 1000;
+        minute = (int) Math.round(minute * irl_minute_multiplier % 1000);
+
+        return (hour + minute) + (day * 24000L);
+    }
+
+    public static long day(long worldtime)
+    {
+        return worldtime / 24000L;
+    }
+
+    public static String progressString(long item, String addition)
+    {
+        final int stringLength = 50;
+
+        item = item % 12000L;
+        final int total = 12000;
+        int percent = (int) (item * 100 / total);
+
+        int division = 100 / stringLength;
+
+        //return '\r' +
+        return String.join("", Collections.nCopies(percent == 0 ? 2 : 2 - (int) (Math.log10(percent)), " ")) +
+                String.format(" %d%% [", percent) +
+                String.join("", Collections.nCopies(percent / division, "=")) +
+                '>' +
+                String.join("", Collections.nCopies(stringLength - percent / division, " ")) +
+                ']' +
+                String.join("", Collections.nCopies(item == 0 ? (int) (Math.log10(total)) : (int) (Math.log10(total)) - (int) (Math.log10(item)), " ")) +
+                String.format(" %d/%d%s", item, total, addition);
+    }
+
+    /*private static long minutesToTicks(int minutes)
+    {
+        return (long) minutes * 60 * 20;
+    }*/
+
+    private static double multiplier(int length)
+    {
+        return new BigDecimal(String.valueOf((double) length / 10.0)).setScale(2, BigDecimal.ROUND_HALF_EVEN).doubleValue();
+    }
+
+    /**
+     * Because reasons
+     *
+     * @return whether it's daytime
+     */
+    public static boolean isDaytime(long worldtime)
+    {
+        return (worldtime % 24000L) >= 0 && (worldtime % 24000L) < night_start;
+    }
+}
