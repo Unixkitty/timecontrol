@@ -1,13 +1,22 @@
 package com.unixkitty.timecontrol.network.message;
 
 import com.unixkitty.timecontrol.TimeControl;
+import com.unixkitty.timecontrol.events.TimeEvents;
+import com.unixkitty.timecontrol.network.MessageHandler;
 import net.minecraft.network.PacketBuffer;
+import net.minecraft.world.GameRules;
+import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.server.ServerWorld;
+import net.minecraftforge.fml.network.PacketDistributor;
+
+import javax.annotation.Nonnull;
 
 public class GameruleMessageToClient implements IMessage
 {
     private boolean isMessageValid;
 
-    private boolean value;
+    private boolean vanillaRuleValue;
+    private boolean modRuleValue;
 
     //For use only by the message handler
     private GameruleMessageToClient()
@@ -15,16 +24,22 @@ public class GameruleMessageToClient implements IMessage
         this.isMessageValid = false;
     }
 
-    public GameruleMessageToClient(boolean gameRuleValue)
+    public GameruleMessageToClient(boolean vanillaRuleValue, boolean gameRuleValue)
     {
-        this.value = gameRuleValue;
+        this.vanillaRuleValue = vanillaRuleValue;
+        this.modRuleValue = gameRuleValue;
 
         this.isMessageValid = true;
     }
 
-    public boolean get()
+    public boolean getVanillaRule()
     {
-        return this.value;
+        return this.vanillaRuleValue;
+    }
+
+    public boolean getModRule()
+    {
+        return this.modRuleValue;
     }
 
     @Override
@@ -37,7 +52,8 @@ public class GameruleMessageToClient implements IMessage
     {
         if (!isMessageValid) return;
 
-        buffer.writeBoolean(this.value);
+        buffer.writeBoolean(this.vanillaRuleValue);
+        buffer.writeBoolean(this.modRuleValue);
     }
 
     public static GameruleMessageToClient decode(PacketBuffer buffer)
@@ -46,7 +62,8 @@ public class GameruleMessageToClient implements IMessage
 
         try
         {
-            message.value = buffer.readBoolean();
+            message.vanillaRuleValue = buffer.readBoolean();
+            message.modRuleValue = buffer.readBoolean();
         }
         catch (IllegalArgumentException | IndexOutOfBoundsException e)
         {
@@ -59,9 +76,20 @@ public class GameruleMessageToClient implements IMessage
         return message;
     }
 
+    public static void send(@Nonnull ServerWorld world)
+    {
+        final boolean vanillaRule = world.getGameRules().getBoolean(GameRules.DO_DAYLIGHT_CYCLE);
+        final boolean modRule = world.getGameRules().getBoolean(TimeEvents.DO_DAYLIGHT_CYCLE_TC);
+
+        MessageHandler.INSTANCE.send(
+                PacketDistributor.DIMENSION.with(() -> DimensionType.OVERWORLD),
+                new GameruleMessageToClient(vanillaRule, modRule)
+        );
+    }
+
     @Override
     public String toString()
     {
-        return String.format("%s[value=%s]", getClass().getSimpleName(), this.value);
+        return String.format("%s[vanillaRuleValue=%s,modRuleValue=%s]", getClass().getSimpleName(), this.vanillaRuleValue, this.modRuleValue);
     }
 }

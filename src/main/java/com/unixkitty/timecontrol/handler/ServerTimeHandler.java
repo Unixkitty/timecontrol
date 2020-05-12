@@ -2,10 +2,13 @@ package com.unixkitty.timecontrol.handler;
 
 import com.unixkitty.timecontrol.Config;
 import com.unixkitty.timecontrol.Numbers;
+import com.unixkitty.timecontrol.events.TimeEvents;
 import com.unixkitty.timecontrol.network.MessageHandler;
+import com.unixkitty.timecontrol.network.message.GameruleMessageToClient;
 import com.unixkitty.timecontrol.network.message.TimeMessageToClient;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.fml.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,37 +57,21 @@ public class ServerTimeHandler implements ITimeHandler
                 wasDaytime = isDaytime;
             }
 
-            //TODO handle sleep
-            /*try
+            if (world.getGameRules().getBoolean(TimeEvents.DO_DAYLIGHT_CYCLE_TC))
             {
-                if (world instanceof ServerWorld && ((ServerWorld) world).areAllPlayersAsleep())
-                {
-                    long i = worldtime + 24000L;
+                customtime++;
 
-                    i = i - i % 24000L;
-
-                    world.setDayTime(i);
-
-                    reset(i);
-
-                    wasDaytime = true;
-
-                    wakeAllPlayers.invoke(world);
-                }
+                Numbers.setWorldtime(world, customtime, multiplier);
             }
-            catch (IllegalAccessException | InvocationTargetException e)
-            {
-                log.error("Unable to wake players!", e);
-            }*/
-
-            customtime++;
-
-            Numbers.setWorldtime(world, customtime, multiplier);
 
             if (world.getServer().getTickCounter() % 20 == 0)
             {
+                //Dummy update to detect config changes
+                TimeEvents.updateServer(world.getDayTime());
+
                 //This is to keep client multipliers in sync
-                sendUpdatedTime();
+                updateClients();
+                GameruleMessageToClient.send((ServerWorld) world);
 
                 if (Config.debugMode.get())
                 {
@@ -116,7 +103,7 @@ public class ServerTimeHandler implements ITimeHandler
         this.customtime = customtime;
         this.multiplier = multiplier;
 
-        sendUpdatedTime();
+        updateClients();
     }
 
     private void syncTimeWithSystem(World world)
@@ -144,7 +131,7 @@ public class ServerTimeHandler implements ITimeHandler
         }
     }
 
-    private void sendUpdatedTime()
+    private void updateClients()
     {
         MessageHandler.INSTANCE.send(
                 PacketDistributor.DIMENSION.with(() -> DimensionType.OVERWORLD),

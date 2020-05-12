@@ -9,14 +9,12 @@ public class Numbers
 {
     static final long night_start = 12000L;
 
-    private static final double day_multiplier = multiplier(Config.day_length_minutes.get());
-    private static final double night_multiplier = multiplier(Config.night_length_minutes.get());
     private static final int irl_hour_offset = 6;
     private static final double irl_minute_multiplier = 16.94;
 
     public static double multiplier(long worldtime)
     {
-        return isDaytime(worldtime) ? day_multiplier : night_multiplier;
+        return multiplier(isDaytime(worldtime));
     }
 
     public static long customtime(long worldtime)
@@ -31,7 +29,7 @@ public class Numbers
 
     public static void setWorldtime(World world, long customtime, double multiplier)
     {
-        world.setDayTime(worldtime(customtime, multiplier));
+        world.getWorldInfo().setDayTime((worldtime(customtime, multiplier)));
     }
 
     public static long systemtime(int hour, int minute, int day)
@@ -73,9 +71,9 @@ public class Numbers
         return (long) minutes * 60 * 20;
     }*/
 
-    private static double multiplier(int length)
+    private static double multiplier(boolean dayMultiplier)
     {
-        return new BigDecimal(String.valueOf((double) length / 10.0)).setScale(2, BigDecimal.ROUND_HALF_EVEN).doubleValue();
+        return new BigDecimal(String.valueOf((double) (dayMultiplier ? Config.day_length_minutes.get() : Config.night_length_minutes.get()) / 10.0)).setScale(2, BigDecimal.ROUND_HALF_EVEN).doubleValue();
     }
 
     /**

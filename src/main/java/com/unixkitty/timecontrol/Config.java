@@ -1,11 +1,14 @@
 package com.unixkitty.timecontrol;
 
 import net.minecraftforge.common.ForgeConfigSpec;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.config.ModConfig;
 
 @SuppressWarnings("CanBeFinal")
+@Mod.EventBusSubscriber(modid = TimeControl.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class Config
 {
-
     public static ForgeConfigSpec COMMON_CONFIG;
     //public static ForgeConfigSpec CLIENT_CONFIG; This will be needed for client-specific options
 
@@ -55,5 +58,24 @@ public class Config
         }
 
         COMMON_CONFIG = commonConfig.build();
+    }
+
+    private static void reload(ModConfig config)
+    {
+        COMMON_CONFIG.setConfig(config.getConfigData());
+    }
+
+    @SuppressWarnings("unused")
+    @SubscribeEvent
+    public static void onLoad(final ModConfig.Loading event)
+    {
+        reload(event.getConfig());
+    }
+
+    @SuppressWarnings("unused")
+    @SubscribeEvent
+    public static void onFileChange(final ModConfig.Reloading event)
+    {
+        reload(event.getConfig());
     }
 }

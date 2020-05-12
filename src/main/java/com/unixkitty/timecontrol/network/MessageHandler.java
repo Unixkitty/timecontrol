@@ -33,7 +33,7 @@ public class MessageHandler
         initialized = true;
 
         INSTANCE = NetworkRegistry.newSimpleChannel(resourceLocation, () ->
-                MESSAGE_PROTOCOL_VERSION,
+                        MESSAGE_PROTOCOL_VERSION,
                 MessageHandler::shouldClientAccept,
                 MessageHandler::shouldServerAccept
         );

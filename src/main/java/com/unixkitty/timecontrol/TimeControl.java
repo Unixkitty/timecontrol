@@ -1,6 +1,7 @@
 package com.unixkitty.timecontrol;
 
 import com.unixkitty.timecontrol.events.TimeEvents;
+import net.minecraftforge.common.ForgeConfig;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
@@ -22,6 +23,7 @@ public class TimeControl
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.COMMON_CONFIG);
 
         MinecraftForge.EVENT_BUS.register(TimeEvents.class);
+        MinecraftForge.EVENT_BUS.register(ForgeConfig.class);
     }
 
     public static Logger log()
