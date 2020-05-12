@@ -8,8 +8,9 @@ import java.util.Collections;
 public class Numbers
 {
     static final long night_start = 12000L;
-    private static final double day_multiplier = multiplier(Config.dayLength());
-    private static final double night_multiplier = multiplier(Config.nightLength());
+
+    private static final double day_multiplier = multiplier(Config.day_length_minutes.get());
+    private static final double night_multiplier = multiplier(Config.night_length_minutes.get());
     private static final int irl_hour_offset = 6;
     private static final double irl_minute_multiplier = 16.94;
 
@@ -30,7 +31,7 @@ public class Numbers
 
     public static void setWorldtime(World world, long customtime, double multiplier)
     {
-        world.provider.setWorldTime(worldtime(customtime, multiplier));
+        world.setDayTime(worldtime(customtime, multiplier));
     }
 
     public static long systemtime(int hour, int minute, int day)

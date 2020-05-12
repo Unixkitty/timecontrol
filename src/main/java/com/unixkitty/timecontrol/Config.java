@@ -1,62 +1,59 @@
 package com.unixkitty.timecontrol;
 
-import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.common.ForgeConfigSpec;
 
-import java.io.File;
-
+@SuppressWarnings("CanBeFinal")
 public class Config
 {
-    private static final String CATEGORY_SYSTEM = "System time";
-    private static final String CATEGORY_ARBITRARY = "Arbitrary time";
 
-    private static final int sync_to_system_time_rate_limit = 864000;
-    private static final int length_limit = 178956;
+    public static ForgeConfigSpec COMMON_CONFIG;
+    //public static ForgeConfigSpec CLIENT_CONFIG; This will be needed for client-specific options
 
-    private static boolean debug = false;
+    private static final int SYNC_TO_SYSTEM_TIME_RATE_LIMIT = 864000;
+    private static final int LENGTH_LIMIT = 178956;
 
-    private static boolean sync_to_system_time = true;
-    private static int sync_to_system_time_rate = 20;
+    /* BEGIN ENTRIES */
 
-    private static int day_length_minutes = 10;
-    private static int night_length_minutes = 10;
+    public static final String CATEGORY_MISC = "miscellaneous";
 
-    static void load(File file)
+    public static ForgeConfigSpec.BooleanValue debugMode;
+
+    public static final String CATEGORY_SYSTEM = "system_time";
+
+    public static ForgeConfigSpec.BooleanValue sync_to_system_time;
+    public static ForgeConfigSpec.IntValue sync_to_system_time_rate;
+
+    public static final String CATEGORY_ARBITRARY = "arbitrary_time";
+
+    public static ForgeConfigSpec.IntValue day_length_minutes;
+    public static ForgeConfigSpec.IntValue night_length_minutes;
+
+    /* END ENTRIES */
+
+    static
     {
-        Configuration config = new Configuration(file, TimeControl.VERSION);
+        ForgeConfigSpec.Builder commonConfig = new ForgeConfigSpec.Builder();
 
-        debug = config.getBoolean("debug", "DEBUG", debug, "Print debug info to console");
+        {
+            commonConfig.push(CATEGORY_SYSTEM);
+            sync_to_system_time = commonConfig.comment("Synchronize game world time with system time").define("sync_to_system_time", false);
+            sync_to_system_time_rate = commonConfig.comment("Sync time every n ticks").defineInRange("sync_to_system_time_rate", 20, 1, SYNC_TO_SYSTEM_TIME_RATE_LIMIT);
+            commonConfig.pop();
+        }
 
-        sync_to_system_time = config.getBoolean("sync_to_system_time", CATEGORY_SYSTEM, sync_to_system_time, "Synchronize in-world time with system time");
-        sync_to_system_time_rate = config.getInt("sync_to_system_time_rate", CATEGORY_SYSTEM, sync_to_system_time_rate, 1, sync_to_system_time_rate_limit, "Sync time every n ticks");
+        {
+            commonConfig.push(CATEGORY_ARBITRARY);
+            day_length_minutes = commonConfig.comment("How long daytime lasts (0 - " + Numbers.night_start + ")").defineInRange("day_length_minutes", 10, 1, LENGTH_LIMIT);
+            night_length_minutes = commonConfig.comment("How long nighttime lasts (" + Numbers.night_start + " - 24000)").defineInRange("night_length_minutes", 10, 1, LENGTH_LIMIT);
+            commonConfig.pop();
+        }
 
-        day_length_minutes = config.getInt("day_length_minutes", CATEGORY_ARBITRARY, day_length_minutes, 1, length_limit, "How long daytime lasts (0 - " + Numbers.night_start + ")");
-        night_length_minutes = config.getInt("night_length_minutes", CATEGORY_ARBITRARY, night_length_minutes, 1, length_limit, "How long nighttime lasts (" + Numbers.night_start + " - 24000)");
+        {
+            commonConfig.push(CATEGORY_MISC);
+            debugMode = commonConfig.define("debugMode", false);
+            commonConfig.pop();
+        }
 
-        config.save();
-    }
-
-    static int dayLength()
-    {
-        return day_length_minutes;
-    }
-
-    static int nightLength()
-    {
-        return night_length_minutes;
-    }
-
-    public static boolean debugMode()
-    {
-        return debug;
-    }
-
-    public static boolean sync_to_system()
-    {
-        return sync_to_system_time;
-    }
-
-    public static int sync_to_system_rate()
-    {
-        return sync_to_system_time_rate;
+        COMMON_CONFIG = commonConfig.build();
     }
 }

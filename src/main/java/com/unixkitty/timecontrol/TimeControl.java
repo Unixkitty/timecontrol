@@ -1,31 +1,31 @@
 package com.unixkitty.timecontrol;
 
-import com.unixkitty.timecontrol.network.MessageHandler;
+import com.unixkitty.timecontrol.events.TimeEvents;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.Mod.EventHandler;
-import net.minecraftforge.fml.common.event.FMLInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.config.ModConfig;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-@SuppressWarnings("WeakerAccess")
-@Mod(modid = TimeControl.MODID, name = TimeControl.NAME, version = TimeControl.VERSION, acceptedMinecraftVersions = "[1.12]")
+@Mod(TimeControl.MODID)
 public class TimeControl
 {
+    // The MODID value here should match an entry in the META-INF/mods.toml file
     public static final String MODID = "timecontrol";
-    public static final String NAME = "TimeControl";
-    //MCVERSION-MAJORMOD.MAJORAPI.MINOR.PATCH
-    public static final String VERSION = "1.12.2-1.0.0.0-beta";
+    public static final String MODNAME = "TimeControl";
 
-    @EventHandler
-    public void preInit(FMLPreInitializationEvent event)
+    private static final Logger LOG = LogManager.getLogger(MODNAME);
+
+    public TimeControl()
     {
-        MessageHandler.init();
-        Config.load(event.getSuggestedConfigurationFile());
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.COMMON_CONFIG);
+
+        MinecraftForge.EVENT_BUS.register(TimeEvents.class);
     }
 
-    @EventHandler
-    public void init(FMLInitializationEvent event)
+    public static Logger log()
     {
-        MinecraftForge.EVENT_BUS.register(TimeEvents.INSTANCE);
+        return LOG;
     }
 }
