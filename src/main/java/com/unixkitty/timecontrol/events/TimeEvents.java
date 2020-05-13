@@ -27,14 +27,10 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.world.SleepFinishedTimeEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.DeferredWorkQueue;
 import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Optional;
 
 import static net.minecraft.world.GameRules.DO_DAYLIGHT_CYCLE;
@@ -56,8 +52,6 @@ public class TimeEvents
     public static void onCommonSetup(FMLCommonSetupEvent event)
     {
         MessageHandler.init();
-
-        initGameRule();
     }
 
     //TODO test whether time ends up being the same after server restart
@@ -215,32 +209,5 @@ public class TimeEvents
     public static void updateServer(long worldtime)
     {
         SERVER.update(Numbers.customtime(worldtime), Numbers.multiplier(worldtime));
-    }
-
-    private static void initGameRule()
-    {
-        if (DO_DAYLIGHT_CYCLE_TC != null)
-        {
-            throw new RuntimeException("Cannot initialize gamerule twice!");
-        }
-
-        Method createBoolean = ObfuscationReflectionHelper.findMethod(GameRules.BooleanValue.class, "func_223568_b", boolean.class);
-        createBoolean.setAccessible(true);
-
-        DeferredWorkQueue.runLater(() ->
-        {
-            try
-            {
-                Object boolTrue = createBoolean.invoke(GameRules.BooleanValue.class, true);
-
-                DO_DAYLIGHT_CYCLE_TC = GameRules.register("doDaylightCycle_tc", (GameRules.RuleType<GameRules.BooleanValue>) boolTrue);
-            }
-            catch (IllegalAccessException | InvocationTargetException e)
-            {
-                TimeControl.log().error("Failed to create gamerule!");
-
-                e.printStackTrace();
-            }
-        });
     }
 }
