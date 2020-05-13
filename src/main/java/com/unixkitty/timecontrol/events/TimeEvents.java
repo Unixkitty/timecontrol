@@ -79,7 +79,7 @@ public class TimeEvents
 
             world.getGameRules().get(DO_DAYLIGHT_CYCLE).set(false, server);
 
-            //world.getGameRules().get(DO_DAYLIGHT_CYCLE_TC).set(world.getGameRules().getBoolean(DO_DAYLIGHT_CYCLE_TC), server);
+//            world.getGameRules().get(DO_DAYLIGHT_CYCLE_TC).set(world.getGameRules().getBoolean(DO_DAYLIGHT_CYCLE_TC), server);
 
             if (!world.isRemote() && !Config.sync_to_system_time.get())
             {
@@ -219,6 +219,11 @@ public class TimeEvents
 
     private static void initGameRule()
     {
+        if (DO_DAYLIGHT_CYCLE_TC != null)
+        {
+            throw new RuntimeException("Cannot initialize gamerule twice!");
+        }
+
         Method createBoolean = ObfuscationReflectionHelper.findMethod(GameRules.BooleanValue.class, "func_223568_b", boolean.class);
         createBoolean.setAccessible(true);
 
