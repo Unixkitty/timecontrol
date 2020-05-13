@@ -22,6 +22,8 @@ import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.event.CommandEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.world.SleepFinishedTimeEvent;
@@ -29,6 +31,7 @@ import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 
 import java.util.Optional;
@@ -47,6 +50,13 @@ public class TimeEvents
     private static final String TIME_STRING = "time";
     private static final String ACTION_ADD = "add";
     private static final String ACTION_SET = "set";
+
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent
+    public static void onClientSetup(FMLClientSetupEvent event)
+    {
+        StartupEvents.initGamerule(false);
+    }
 
     @SubscribeEvent
     public static void onCommonSetup(FMLCommonSetupEvent event)

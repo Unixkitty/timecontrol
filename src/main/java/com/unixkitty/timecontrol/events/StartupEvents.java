@@ -1,19 +1,15 @@
 package com.unixkitty.timecontrol.events;
 
 import com.unixkitty.timecontrol.TimeControl;
-import net.minecraft.command.Commands;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.command.impl.GameRuleCommand;
+import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.world.GameRules;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DeferredWorkQueue;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.server.FMLServerAboutToStartEvent;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -22,14 +18,7 @@ import java.lang.reflect.Method;
 public class StartupEvents
 {
 
-    @OnlyIn(Dist.CLIENT)
-    @SubscribeEvent
-    public static void onClientSetup(FMLClientSetupEvent event)
-    {
-        initGamerule(false);
-    }
-
-    @OnlyIn(Dist.DEDICATED_SERVER)
+/*    @OnlyIn(Dist.DEDICATED_SERVER)
     @SubscribeEvent
     public static void onServerSetup(FMLServerAboutToStartEvent event)
     {
@@ -49,9 +38,21 @@ public class StartupEvents
 
             e.printStackTrace();
         }
+    }*/
+
+    @SubscribeEvent
+    public static void onServerSetup(FMLServerAboutToStartEvent event)
+    {
+        if (event.getServer() instanceof DedicatedServer)
+        {
+            initGamerule(true);
+        }
+
+        GameRuleCommand.register(event.getServer().getCommandManager().getDispatcher());
+//        GameRuleCommand.register(event.getCommandDispatcher());
     }
 
-    private static void initGamerule(boolean dedicatedServer)
+    static void initGamerule(boolean dedicatedServer)
     {
         if (TimeEvents.DO_DAYLIGHT_CYCLE_TC != null)
         {
