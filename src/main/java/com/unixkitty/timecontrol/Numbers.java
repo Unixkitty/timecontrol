@@ -24,7 +24,7 @@ public class Numbers
 
     private static long worldtime(long customtime, double multiplier)
     {
-        return (long) (customtime / multiplier);
+        return (long) ((customtime / multiplier) % 2147483647L);
     }
 
     public static void setWorldtime(World world, long customtime, double multiplier)

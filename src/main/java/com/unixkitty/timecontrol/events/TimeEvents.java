@@ -1,5 +1,6 @@
 package com.unixkitty.timecontrol.events;
 
+import com.mojang.brigadier.context.CommandContext;
 import com.unixkitty.timecontrol.Config;
 import com.unixkitty.timecontrol.Numbers;
 import com.unixkitty.timecontrol.TimeControl;
@@ -12,7 +13,11 @@ import com.unixkitty.timecontrol.network.message.IMessage;
 import com.unixkitty.timecontrol.network.message.TimeMessageToClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.command.CommandException;
+import net.minecraft.command.CommandSource;
+import net.minecraft.command.impl.TimeCommand;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
@@ -30,6 +35,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Optional;
 
 import static net.minecraft.world.GameRules.DO_DAYLIGHT_CYCLE;
 
@@ -42,6 +48,10 @@ public class TimeEvents
     private static final ITimeHandler SERVER = new ServerTimeHandler();
     private static final ITimeHandler CLIENT = new ClientTimeHandler();
 
+    private static final String TIME_STRING = "time";
+    private static final String ACTION_ADD = "add";
+    private static final String ACTION_SET = "set";
+
     @SubscribeEvent
     public static void onCommonSetup(FMLCommonSetupEvent event)
     {
@@ -50,6 +60,7 @@ public class TimeEvents
         initGameRule();
     }
 
+    //TODO test whether time ends up being the same after server restart
     @SubscribeEvent
     public static void onWorldLoad(WorldEvent.Load event)
     {
@@ -67,8 +78,8 @@ public class TimeEvents
             }
 
             world.getGameRules().get(DO_DAYLIGHT_CYCLE).set(false, server);
-            //Is this even necessary?
-            world.getGameRules().get(DO_DAYLIGHT_CYCLE_TC).set(world.getGameRules().getBoolean(DO_DAYLIGHT_CYCLE_TC), server);
+
+            //world.getGameRules().get(DO_DAYLIGHT_CYCLE_TC).set(world.getGameRules().getBoolean(DO_DAYLIGHT_CYCLE_TC), server);
 
             if (!world.isRemote() && !Config.sync_to_system_time.get())
             {
@@ -103,82 +114,74 @@ public class TimeEvents
         }
     }
 
+    //TODO custom command to change settings without having to edit the config?
     @SubscribeEvent
     public static void onCommand(CommandEvent event)
     {
-        //TODO handle /gamerule and /time commands
-        /*
-        try
+        if (DO_DAYLIGHT_CYCLE_TC != null && event.getException() == null && event.getParseResults().getReader().getString().contains(TIME_STRING))
         {
-            if (event.getException() == null)
+            final CommandContext<?> context = event.getParseResults().getContext().build(event.getParseResults().getReader().getString());
+
+            if (context.hasNodes() && context.getNodes().get(0).getNode().getName().equals(TIME_STRING) && context.getNodes().size() == 3)
             {
-                if (
-                        event.getCommand() instanceof CommandGameRule
-                                && event.getParameters().length >= 1
-                                && (event.getParameters()[0].equals(doDaylightCycle) || event.getParameters()[0].equals(doDaylightCycle_tc))
-                                && (event.getSender().getServer() != null)
-                        )
+                final String action = context.getNodes().get(1).getNode().getName();
+
+                if (!action.equals(ACTION_SET) && !action.equals(ACTION_ADD)) return;
+
+                final CommandSource sender = event.getParseResults().getContext().getSource();
+
+                if (Config.sync_to_system_time.get())
                 {
-                    event.getParameters()[0] = doDaylightCycle_tc;
-
-                    new CommandGameRule().execute(event.getSender().getServer(), event.getSender(), event.getParameters());
-
-                    if (event.getParameters().length >= 2)
-                    {
-                        MessageHandler.INSTANCE.sendToAll(new PacketGamerule(CommandBase.parseBoolean(event.getParameters()[1])));
-                    }
-
+                    sender.sendErrorMessage(new CommandException(new TranslationTextComponent("text.timecontrol.change_time_when_system", action, TIME_STRING)).getComponent());
                     event.setCanceled(true);
+                    return;
                 }
-                else if (event.getCommand() instanceof CommandTime && event.getParameters().length == 2)
+
+                final String argument = context.getNodes().get(2).getNode().getName();
+
+                TimeControl.log().debug("Caught time command: /" + TIME_STRING + " " + action + " " + argument);
+
+                Optional<Integer> time = Optional.empty();
+
+                switch (argument)
                 {
-                    String[] args = event.getParameters();
-
-                    if (args[0].equals("set") || args[0].equals("add"))
-                    {
-                        String arg = args[1];
-                        long time;
-
-                        if (args[0].equals("add"))
+                    case "day":
+                        time = Optional.of(1000);
+                        break;
+                    case "noon":
+                        time = Optional.of(6000);
+                        break;
+                    case "night":
+                        time = Optional.of(13000);
+                        break;
+                    case "midnight":
+                        time = Optional.of(18000);
+                        break;
+                    case TIME_STRING:
+                        try
                         {
-                            time = CommandBase.parseLong(arg);
+                            time = Optional.of(context.getArgument(TIME_STRING, Integer.class));
+                        }
+                        catch (IllegalArgumentException ignored)
+                        {
 
-                            time = event.getSender().getServer().getWorld(0).getWorldTime() + time;
                         }
-                        else
-                        {
-                            switch (arg)
-                            {
-                                case "day":
-                                    time = 1000L;
-                                    break;
-                                case "night":
-                                    time = 13000L;
-                                    break;
-                                default:
-                                    time = CommandBase.parseLong(arg);
-                                    break;
-                            }
-                        }
+                        break;
+                }
 
-                        if (Config.sync_to_system())
-                        {
-                            event.getSender().sendMessage(new TextComponentString(TextFormatting.RED + "Disable system time synchronization to " + args[0] + " time!"));
-                            event.setCanceled(true);
-                        }
-                        else
-                        {
-                            serverUpdate(time);
-                        }
-                    }
+                if (time.isPresent())
+                {
+                    updateServer(
+                            action.equals(ACTION_SET) ?
+                                    TimeCommand.setTime(sender, time.get()) :
+                                    TimeCommand.addTime(sender, time.get())
+                    );
+
+                    //We cancel on success
+                    event.setCanceled(true);
                 }
             }
         }
-        catch (CommandException e)
-        {
-            event.setException(e);
-        }
-         */
     }
 
     @SubscribeEvent
@@ -211,6 +214,7 @@ public class TimeEvents
     {
         SERVER.update(Numbers.customtime(worldtime), Numbers.multiplier(worldtime));
     }
+
 
     private static void initGameRule()
     {
