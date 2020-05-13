@@ -187,8 +187,10 @@ public class TimeEvents
     @SubscribeEvent
     public static void onSleepFinished(SleepFinishedTimeEvent event)
     {
-        //TODO handle sleep
-        TimeControl.log().debug("Sleep finished!");
+        if (event.getWorld() instanceof ServerWorld)
+        {
+            updateServer(event.getNewTime());
+        }
     }
 
     public static void updateClient(IMessage updateMessage)
@@ -214,7 +216,6 @@ public class TimeEvents
     {
         SERVER.update(Numbers.customtime(worldtime), Numbers.multiplier(worldtime));
     }
-
 
     private static void initGameRule()
     {

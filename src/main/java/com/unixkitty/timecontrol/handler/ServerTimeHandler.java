@@ -9,10 +9,12 @@ import com.unixkitty.timecontrol.network.message.TimeMessageToClient;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.lang.reflect.Field;
 import java.util.Calendar;
 
 public class ServerTimeHandler implements ITimeHandler
@@ -20,6 +22,9 @@ public class ServerTimeHandler implements ITimeHandler
     private static final Logger log = LogManager.getLogger(ServerTimeHandler.class.getSimpleName());
 
 //    private static final Method wakeAllPlayers = ReflectionHelper.findMethod(WorldServer.class, "wakeAllPlayers", "func_73053_d");
+
+    private static final Field allPlayersSleeping = ObfuscationReflectionHelper.findField(ServerWorld.class, "field_73068_P");
+    private static boolean accessCheck = false;
 
     /* System */
     private int lastMinute = 0;
@@ -32,21 +37,28 @@ public class ServerTimeHandler implements ITimeHandler
     private boolean wasDaytime = true;
     /* Arbitrary */
 
+    static
+    {
+        allPlayersSleeping.setAccessible(true);
+    }
+
     @Override
     public void tick(World world)
     {
         if (world.getServer() == null) return;
 
+        ServerWorld serverWorld = (ServerWorld) world;
+
         if (Config.sync_to_system_time.get())
         {
-            if (!world.isRemote && world.getServer().getTickCounter() % Config.sync_to_system_time_rate.get() == 0)
+            if (!serverWorld.isRemote && serverWorld.getServer().getTickCounter() % Config.sync_to_system_time_rate.get() == 0)
             {
-                syncTimeWithSystem(world);
+                syncTimeWithSystem(serverWorld);
             }
         }
         else
         {
-            long worldtime = world.getDayTime();
+            long worldtime = serverWorld.getDayTime();
 
             boolean isDaytime = Numbers.isDaytime(worldtime);
 
@@ -57,25 +69,32 @@ public class ServerTimeHandler implements ITimeHandler
                 wasDaytime = isDaytime;
             }
 
-            if (world.getGameRules().getBoolean(TimeEvents.DO_DAYLIGHT_CYCLE_TC))
+            if (serverWorld.getGameRules().getBoolean(TimeEvents.DO_DAYLIGHT_CYCLE_TC))
             {
+                if (areAllPlayersAsleep(serverWorld))
+                {
+                    long l = serverWorld.getDayTime() + 24000L;
+
+                    serverWorld.setDayTime(net.minecraftforge.event.ForgeEventFactory.onSleepFinished(serverWorld, l - l % 24000L, serverWorld.getDayTime()));
+                }
+
                 customtime++;
 
-                Numbers.setWorldtime(world, customtime, multiplier);
+                Numbers.setWorldtime(serverWorld, customtime, multiplier);
             }
 
-            if (world.getServer().getTickCounter() % 20 == 0)
+            if (serverWorld.getServer().getTickCounter() % 20 == 0)
             {
                 //Dummy update to detect config changes
-                TimeEvents.updateServer(world.getDayTime());
+                TimeEvents.updateServer(serverWorld.getDayTime());
 
                 //This is to keep client multipliers in sync
                 updateClients();
-                GameruleMessageToClient.send((ServerWorld) world);
+                GameruleMessageToClient.send(serverWorld);
 
                 if (Config.debugMode.get())
                 {
-                    long updatedWorldtime = world.getDayTime();
+                    long updatedWorldtime = serverWorld.getDayTime();
 
                     log.info(Numbers.progressString(updatedWorldtime, ""));
 
@@ -92,11 +111,6 @@ public class ServerTimeHandler implements ITimeHandler
         }
     }
 
-    private void reset(long worldtime)
-    {
-        update(Numbers.customtime(worldtime), Numbers.multiplier(worldtime));
-    }
-
     @Override
     public void update(long customtime, double multiplier)
     {
@@ -104,6 +118,32 @@ public class ServerTimeHandler implements ITimeHandler
         this.multiplier = multiplier;
 
         updateClients();
+    }
+
+    private boolean areAllPlayersAsleep(ServerWorld world)
+    {
+        try
+        {
+            return allPlayersSleeping.getBoolean(world) && world.getPlayers().stream().noneMatch(
+                    serverPlayerEntity -> !serverPlayerEntity.isSpectator() && !serverPlayerEntity.isPlayerFullyAsleep()
+            );
+        }
+        catch (IllegalAccessException e)
+        {
+            if (!accessCheck)
+            {
+                e.printStackTrace();
+
+                accessCheck = true;
+            }
+        }
+
+        return false;
+    }
+
+    private void reset(long worldtime)
+    {
+        update(Numbers.customtime(worldtime), Numbers.multiplier(worldtime));
     }
 
     private void syncTimeWithSystem(World world)
