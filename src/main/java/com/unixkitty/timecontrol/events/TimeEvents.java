@@ -76,7 +76,7 @@ public class TimeEvents
 
         World world = (World) event.getWorld();
 
-        if (world.getDimensionKey() == World.OVERWORLD)
+        if (world.func_234923_W_() == World.field_234918_g_)
         {
             MinecraftServer server = null;
 
@@ -102,7 +102,7 @@ public class TimeEvents
                 event.side == LogicalSide.CLIENT
                         && event.phase == TickEvent.Phase.START
 //                        && !event.player.world.getDimensionType().doesFixedTimeExist()
-                        && event.player.world.getDimensionKey() == World.OVERWORLD
+                        && event.player.world.func_234923_W_() == World.field_234918_g_
 
         )
         {
@@ -115,7 +115,7 @@ public class TimeEvents
         if (
                 event.side == LogicalSide.SERVER
                         && event.phase == TickEvent.Phase.START
-                        && event.world.getDimensionKey() == World.OVERWORLD
+                        && event.world.func_234923_W_() == World.field_234918_g_
         )
         {
             SERVER.tick(event.world);

@@ -174,7 +174,7 @@ public class ServerTimeHandler implements ITimeHandler
     private void updateClients()
     {
         MessageHandler.INSTANCE.send(
-                PacketDistributor.DIMENSION.with(() -> World.OVERWORLD),
+                PacketDistributor.DIMENSION.with(() -> World.field_234918_g_),
                 new TimeMessageToClient(this.customtime, this.multiplier)
         );
     }
