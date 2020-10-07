@@ -20,7 +20,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -64,15 +63,15 @@ public class TimeEvents
         MessageHandler.init();
     }
 
-    //TODO test whether time ends up being the same after server restart
+    //TODO implement custom time multipliers for dimensions other than the Overoworld using world.getDimensionType().doesFixedTimeExist()
     @SubscribeEvent
     public static void onWorldLoad(WorldEvent.Load event)
     {
-        if (DO_DAYLIGHT_CYCLE_TC == null) return;
+        if (DO_DAYLIGHT_CYCLE_TC == null || !(event.getWorld() instanceof World)) return;
 
-        World world = event.getWorld().getWorld();
+        World world = (World) event.getWorld();
 
-        if (world.getDimension().getType() == DimensionType.OVERWORLD)
+        if (world.getDimensionKey() == World.OVERWORLD)
         {
             MinecraftServer server = null;
 
@@ -98,7 +97,9 @@ public class TimeEvents
         if (
                 event.side == LogicalSide.CLIENT
                         && event.phase == TickEvent.Phase.START
-                        && event.player.world.dimension.getType() == DimensionType.OVERWORLD
+//                        && !event.player.world.getDimensionType().doesFixedTimeExist()
+                        && event.player.world.getDimensionKey() == World.OVERWORLD
+
         )
         {
             CLIENT.tick(event.player.world);
@@ -111,7 +112,7 @@ public class TimeEvents
         if (
                 event.side == LogicalSide.SERVER
                         && event.phase == TickEvent.Phase.START
-                        && event.world.dimension.getType() == DimensionType.OVERWORLD
+                        && event.world.getDimensionKey() == World.OVERWORLD
         )
         {
             SERVER.tick(event.world);

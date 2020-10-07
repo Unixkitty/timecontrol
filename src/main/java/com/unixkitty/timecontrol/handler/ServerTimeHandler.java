@@ -7,8 +7,8 @@ import com.unixkitty.timecontrol.network.MessageHandler;
 import com.unixkitty.timecontrol.network.message.GameruleMessageToClient;
 import com.unixkitty.timecontrol.network.message.TimeMessageToClient;
 import net.minecraft.world.World;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.storage.ServerWorldInfo;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
@@ -75,7 +75,7 @@ public class ServerTimeHandler implements ITimeHandler
                 {
                     long l = serverWorld.getDayTime() + 24000L;
 
-                    serverWorld.setDayTime(net.minecraftforge.event.ForgeEventFactory.onSleepFinished(serverWorld, l - l % 24000L, serverWorld.getDayTime()));
+                    ((ServerWorldInfo) serverWorld.getWorldInfo()).setDayTime(net.minecraftforge.event.ForgeEventFactory.onSleepFinished(serverWorld, l - l % 24000L, serverWorld.getDayTime()));
                 }
 
                 customtime++;
@@ -146,7 +146,7 @@ public class ServerTimeHandler implements ITimeHandler
         update(Numbers.customtime(worldtime), Numbers.multiplier(worldtime));
     }
 
-    private void syncTimeWithSystem(World world)
+    private void syncTimeWithSystem(ServerWorld world)
     {
         //TODO different timezones for clients?
         Calendar calendar = Calendar.getInstance();
@@ -162,7 +162,7 @@ public class ServerTimeHandler implements ITimeHandler
 
             long time = Numbers.systemtime(hour, minute, calendar.get(Calendar.DAY_OF_YEAR));
 
-            world.setDayTime(time);
+            ((ServerWorldInfo) world.getWorldInfo()).setDayTime(time);
 
             if (Config.debugMode.get())
             {
@@ -174,7 +174,7 @@ public class ServerTimeHandler implements ITimeHandler
     private void updateClients()
     {
         MessageHandler.INSTANCE.send(
-                PacketDistributor.DIMENSION.with(() -> DimensionType.OVERWORLD),
+                PacketDistributor.DIMENSION.with(() -> World.OVERWORLD),
                 new TimeMessageToClient(this.customtime, this.multiplier)
         );
     }

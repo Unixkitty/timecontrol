@@ -1,6 +1,9 @@
 package com.unixkitty.timecontrol;
 
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.storage.IWorldInfo;
+import net.minecraft.world.storage.ServerWorldInfo;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -29,7 +32,19 @@ public class Numbers
 
     public static void setWorldtime(World world, long customtime, double multiplier)
     {
-        world.getWorldInfo().setDayTime((worldtime(customtime, multiplier)));
+//        world.getWorldInfo().setDayTime((worldtime(customtime, multiplier)));
+
+        IWorldInfo worldInfo = world.getWorldInfo();
+        long worldtime = worldtime(customtime, multiplier);
+
+        if (worldInfo instanceof ClientWorld.ClientWorldInfo)
+        {
+            ((ClientWorld.ClientWorldInfo) worldInfo).setDayTime(worldtime);
+        }
+        else if (worldInfo instanceof ServerWorldInfo)
+        {
+            ((ServerWorldInfo) worldInfo).setDayTime(worldtime);
+        }
     }
 
     public static long systemtime(int hour, int minute, int day)

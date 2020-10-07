@@ -17,29 +17,6 @@ import java.lang.reflect.Method;
 @Mod.EventBusSubscriber
 public class StartupEvents
 {
-
-/*    @OnlyIn(Dist.DEDICATED_SERVER)
-    @SubscribeEvent
-    public static void onServerSetup(FMLServerAboutToStartEvent event)
-    {
-        initGamerule(true);
-
-        try
-        {
-            Field commandManagerField = ObfuscationReflectionHelper.findField(MinecraftServer.class, "field_195579_af");
-
-            commandManagerField.setAccessible(true);
-
-            commandManagerField.set(event.getServer(), new Commands(true));
-        }
-        catch (IllegalAccessException e)
-        {
-            TimeControl.log().error("Failed to reinstantiate Commands on dedicated server, may not be possible to set custom gamerule in-game");
-
-            e.printStackTrace();
-        }
-    }*/
-
     @SubscribeEvent
     public static void onServerSetup(FMLServerAboutToStartEvent event)
     {
@@ -49,7 +26,6 @@ public class StartupEvents
         }
 
         GameRuleCommand.register(event.getServer().getCommandManager().getDispatcher());
-//        GameRuleCommand.register(event.getCommandDispatcher());
     }
 
     static void initGamerule(boolean dedicatedServer)
@@ -73,13 +49,14 @@ public class StartupEvents
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static void _initGamerule(Method method)
     {
         try
         {
             Object boolTrue = method.invoke(GameRules.BooleanValue.class, true);
 
-            TimeEvents.DO_DAYLIGHT_CYCLE_TC = GameRules.register("doDaylightCycle_tc", (GameRules.RuleType<GameRules.BooleanValue>) boolTrue);
+            TimeEvents.DO_DAYLIGHT_CYCLE_TC = GameRules.register("doDaylightCycle_tc", GameRules.Category.UPDATES, (GameRules.RuleType<GameRules.BooleanValue>) boolTrue);
 
             TimeControl.log().info("Registered custom gamerule");
         }
