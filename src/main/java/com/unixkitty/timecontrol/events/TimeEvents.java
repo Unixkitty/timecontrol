@@ -29,7 +29,6 @@ import net.minecraftforge.event.world.SleepFinishedTimeEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.LogicalSide;
-import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 
@@ -38,7 +37,6 @@ import java.util.Optional;
 import static net.minecraft.world.GameRules.DO_DAYLIGHT_CYCLE;
 
 @SuppressWarnings("unused")
-@Mod.EventBusSubscriber(modid = TimeControl.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class TimeEvents
 {
     public static GameRules.RuleKey<GameRules.BooleanValue> DO_DAYLIGHT_CYCLE_TC = null;
@@ -49,6 +47,10 @@ public class TimeEvents
     private static final String TIME_STRING = "time";
     private static final String ACTION_ADD = "add";
     private static final String ACTION_SET = "set";
+
+    /*
+        BEGIN modEventBus
+     */
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
@@ -63,8 +65,11 @@ public class TimeEvents
         MessageHandler.init();
     }
 
+    /*
+        BEGIN MinecraftForge.EVENT_BUS
+     */
+
     //TODO implement custom time multipliers for dimensions other than the Overoworld using world.getDimensionType().doesFixedTimeExist()
-    @SubscribeEvent
     public static void onWorldLoad(WorldEvent.Load event)
     {
         if (DO_DAYLIGHT_CYCLE_TC == null || !(event.getWorld() instanceof World)) return;
@@ -91,7 +96,6 @@ public class TimeEvents
         }
     }
 
-    @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event)
     {
         if (
@@ -106,7 +110,6 @@ public class TimeEvents
         }
     }
 
-    @SubscribeEvent
     public static void onWorldTick(TickEvent.WorldTickEvent event)
     {
         if (
@@ -120,7 +123,6 @@ public class TimeEvents
     }
 
     //TODO custom command to change settings without having to edit the config?
-    @SubscribeEvent
     public static void onCommand(CommandEvent event)
     {
         if (DO_DAYLIGHT_CYCLE_TC != null && event.getException() == null && event.getParseResults().getReader().getString().contains(TIME_STRING))
@@ -189,7 +191,6 @@ public class TimeEvents
         }
     }
 
-    @SubscribeEvent
     public static void onSleepFinished(SleepFinishedTimeEvent event)
     {
         if (event.getWorld() instanceof ServerWorld)

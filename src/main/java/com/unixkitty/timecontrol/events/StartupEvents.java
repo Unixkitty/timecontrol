@@ -4,9 +4,7 @@ import com.unixkitty.timecontrol.TimeControl;
 import net.minecraft.command.impl.GameRuleCommand;
 import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.world.GameRules;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DeferredWorkQueue;
-import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.event.server.FMLServerAboutToStartEvent;
 
@@ -14,10 +12,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 @SuppressWarnings("unused")
-@Mod.EventBusSubscriber
 public class StartupEvents
 {
-    @SubscribeEvent
     public static void onServerSetup(FMLServerAboutToStartEvent event)
     {
         if (event.getServer() instanceof DedicatedServer)
