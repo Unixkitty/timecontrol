@@ -52,7 +52,7 @@ public class StartupEvents
         {
             Object boolTrue = method.invoke(GameRules.BooleanValue.class, true);
 
-            TimeEvents.DO_DAYLIGHT_CYCLE_TC = GameRules.func_234903_a_("doDaylightCycle_tc", GameRules.Category.UPDATES, (GameRules.RuleType<GameRules.BooleanValue>) boolTrue);
+            TimeEvents.DO_DAYLIGHT_CYCLE_TC = /* GameRules.register() */ GameRules.func_234903_a_("doDaylightCycle_tc", GameRules.Category.UPDATES, (GameRules.RuleType<GameRules.BooleanValue>) boolTrue);
 
             TimeControl.log().info("Registered custom gamerule");
         }

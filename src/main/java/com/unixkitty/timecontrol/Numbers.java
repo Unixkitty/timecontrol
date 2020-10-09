@@ -32,12 +32,10 @@ public class Numbers
 
     public static void setWorldtime(World world, long customtime, double multiplier)
     {
-//        world.getWorldInfo().setDayTime((worldtime(customtime, multiplier)));
-
         IWorldInfo worldInfo = world.getWorldInfo();
         long worldtime = worldtime(customtime, multiplier);
 
-        if (worldInfo instanceof ClientWorld.ClientWorldInfo)
+        if (world.isRemote() && worldInfo instanceof ClientWorld.ClientWorldInfo)
         {
             ((ClientWorld.ClientWorldInfo) worldInfo).setDayTime(worldtime);
         }

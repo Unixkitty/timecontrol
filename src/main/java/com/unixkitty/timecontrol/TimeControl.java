@@ -28,11 +28,12 @@ public class TimeControl
 
         final IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
+        MinecraftForge.EVENT_BUS.addListener(StartupEvents::onServerSetup);
+        MinecraftForge.EVENT_BUS.addListener(TimeEvents::onWorldLoad);
+
         modEventBus.addListener(TimeEvents::onClientSetup);
         modEventBus.addListener(TimeEvents::onCommonSetup);
 
-        MinecraftForge.EVENT_BUS.addListener(StartupEvents::onServerSetup);
-        MinecraftForge.EVENT_BUS.addListener(TimeEvents::onWorldLoad);
         MinecraftForge.EVENT_BUS.addListener(TimeEvents::onPlayerTick);
         MinecraftForge.EVENT_BUS.addListener(TimeEvents::onWorldTick);
         MinecraftForge.EVENT_BUS.addListener(TimeEvents::onCommand);
