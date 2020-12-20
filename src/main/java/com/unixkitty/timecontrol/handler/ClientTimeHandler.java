@@ -23,11 +23,14 @@ public class ClientTimeHandler implements ITimeHandler
         //In system time synchronization mode we simply depend on server time packets
         if (!Config.sync_to_system_time.get())
         {
-            debugLogDelay++;
+            debugLogDelay = (debugLogDelay + 1) % 20;
 
-            if (multiplier == 0 && debugLogDelay == 20)
+            if (multiplier == 0)
             {
-                log.info("Waiting for server time packet...");
+                if (debugLogDelay == 0 && Config.debugMode.get())
+                {
+                    log.info("Waiting for server time packet...");
+                }
 
                 return;
             }
@@ -39,7 +42,7 @@ public class ClientTimeHandler implements ITimeHandler
                 Numbers.setWorldtime(world, customtime, multiplier);
             }
 
-            if (debugLogDelay == 20 && Config.debugMode.get())
+            if (debugLogDelay == 0 && Config.debugMode.get())
             {
                 long worldtime = world.getDayTime();
 
@@ -49,11 +52,6 @@ public class ClientTimeHandler implements ITimeHandler
                         world.getGameRules().getBoolean(GameRules.DO_DAYLIGHT_CYCLE),
                         world.getGameRules().getBoolean(TimeEvents.DO_DAYLIGHT_CYCLE_TC)
                 ));
-            }
-
-            if (debugLogDelay >= 20)
-            {
-                debugLogDelay = 0;
             }
         }
     }
