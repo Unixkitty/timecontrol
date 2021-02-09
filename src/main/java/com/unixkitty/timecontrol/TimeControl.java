@@ -24,8 +24,6 @@ public class TimeControl
     {
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.COMMON_CONFIG);
 
-//        MinecraftForge.EVENT_BUS.register(TimeEvents.class);
-
         final IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         MinecraftForge.EVENT_BUS.addListener(StartupEvents::onServerSetup);

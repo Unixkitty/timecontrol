@@ -148,7 +148,6 @@ public class ServerTimeHandler implements ITimeHandler
 
     private void syncTimeWithSystem(ServerWorld world)
     {
-        //TODO different timezones for clients?
         Calendar calendar = Calendar.getInstance();
 
         int hour = calendar.get(Calendar.HOUR_OF_DAY);
@@ -156,11 +155,10 @@ public class ServerTimeHandler implements ITimeHandler
 
         if (minute != this.lastMinute)
         {
-            this.lastMinute = minute;
-
             long worldtime = world.getDayTime();
-
             long time = Numbers.systemtime(hour, minute, calendar.get(Calendar.DAY_OF_YEAR));
+
+            this.lastMinute = minute;
 
             ((ServerWorldInfo) world.getWorldInfo()).setDayTime(time);
 
@@ -174,7 +172,7 @@ public class ServerTimeHandler implements ITimeHandler
     private void updateClients()
     {
         MessageHandler.INSTANCE.send(
-                PacketDistributor.DIMENSION.with(() -> World.field_234918_g_),
+                PacketDistributor.DIMENSION.with(() -> World.OVERWORLD),
                 new TimeMessageToClient(this.customtime, this.multiplier)
         );
     }

@@ -9,11 +9,11 @@ import net.minecraftforge.fml.config.ModConfig;
 @Mod.EventBusSubscriber(modid = TimeControl.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class Config
 {
-    public static ForgeConfigSpec COMMON_CONFIG;
+    static ForgeConfigSpec COMMON_CONFIG;
     //public static ForgeConfigSpec CLIENT_CONFIG; This will be needed for client-specific options
 
     private static final int SYNC_TO_SYSTEM_TIME_RATE_LIMIT = 864000;
-    private static final int LENGTH_LIMIT = 178956;
+    public static final int LENGTH_LIMIT = 178956;
 
     /* BEGIN ENTRIES */
 
@@ -23,12 +23,18 @@ public class Config
 
     public static final String CATEGORY_SYSTEM = "system_time";
 
+    public static final String SYNC_TO_SYSTEM_TIME = "sync_to_system_time";
     public static ForgeConfigSpec.BooleanValue sync_to_system_time;
+
+    public static final String SYNC_TO_SYSTEM_TIME_RATE = "sync_to_system_time_rate";
     public static ForgeConfigSpec.IntValue sync_to_system_time_rate;
 
     public static final String CATEGORY_ARBITRARY = "arbitrary_time";
 
+    public static final String DAY_LENGTH_MINUTES = "day_length_minutes";
     public static ForgeConfigSpec.IntValue day_length_minutes;
+
+    public static final String NIGHT_LENGTH_MINUTES = "night_length_minutes";
     public static ForgeConfigSpec.IntValue night_length_minutes;
 
     /* END ENTRIES */
@@ -59,6 +65,11 @@ public class Config
 
         COMMON_CONFIG = commonConfig.build();
     }
+
+    /*public static void save()
+    {
+        COMMON_CONFIG.save();
+    }*/
 
     private static void reload(ModConfig config)
     {

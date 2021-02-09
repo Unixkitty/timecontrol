@@ -1,9 +1,11 @@
 package com.unixkitty.timecontrol.events;
 
+import com.unixkitty.timecontrol.CommandTimeControl;
 import com.unixkitty.timecontrol.TimeControl;
 import net.minecraft.command.impl.GameRuleCommand;
 import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.world.GameRules;
+import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.fml.DeferredWorkQueue;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.event.server.FMLServerAboutToStartEvent;
@@ -14,6 +16,11 @@ import java.lang.reflect.Method;
 @SuppressWarnings("unused")
 public class StartupEvents
 {
+    public static void onRegisterCommands(RegisterCommandsEvent event)
+    {
+        CommandTimeControl.register(event.getDispatcher());
+    }
+
     public static void onServerSetup(FMLServerAboutToStartEvent event)
     {
         if (event.getServer() instanceof DedicatedServer)
@@ -21,6 +28,7 @@ public class StartupEvents
             initGamerule(true);
         }
 
+        //TODO move to onRegisterCommands
         GameRuleCommand.register(event.getServer().getCommandManager().getDispatcher());
     }
 
@@ -52,7 +60,7 @@ public class StartupEvents
         {
             Object boolTrue = method.invoke(GameRules.BooleanValue.class, true);
 
-            TimeEvents.DO_DAYLIGHT_CYCLE_TC = /* GameRules.register() */ GameRules.func_234903_a_("doDaylightCycle_tc", GameRules.Category.UPDATES, (GameRules.RuleType<GameRules.BooleanValue>) boolTrue);
+            TimeEvents.DO_DAYLIGHT_CYCLE_TC = GameRules.register("doDaylightCycle_tc", GameRules.Category.UPDATES, (GameRules.RuleType<GameRules.BooleanValue>) boolTrue);
 
             TimeControl.log().info("Registered custom gamerule");
         }

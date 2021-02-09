@@ -82,7 +82,7 @@ public class GameruleMessageToClient implements IMessage
         final boolean modRule = world.getGameRules().getBoolean(TimeEvents.DO_DAYLIGHT_CYCLE_TC);
 
         MessageHandler.INSTANCE.send(
-                PacketDistributor.DIMENSION.with(() -> World.field_234918_g_),
+                PacketDistributor.DIMENSION.with(() -> World.OVERWORLD),
                 new GameruleMessageToClient(vanillaRule, modRule)
         );
     }

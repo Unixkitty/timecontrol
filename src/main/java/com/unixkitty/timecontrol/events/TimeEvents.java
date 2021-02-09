@@ -21,6 +21,7 @@ import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.CommandEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.world.SleepFinishedTimeEvent;
@@ -58,6 +59,7 @@ public class TimeEvents
     {
         StartupEvents.initGamerule(false);
         MessageHandler.init();
+        MinecraftForge.EVENT_BUS.addListener(StartupEvents::onRegisterCommands);
     }
 
     /*
@@ -71,7 +73,7 @@ public class TimeEvents
 
         World world = (World) event.getWorld();
 
-        if (world.func_234923_W_() == World.field_234918_g_)
+        if (world.getDimensionKey() == World.OVERWORLD)
         {
             MinecraftServer server = null;
 
@@ -81,8 +83,6 @@ public class TimeEvents
             }
 
             world.getGameRules().get(DO_DAYLIGHT_CYCLE).set(false, server);
-
-//            world.getGameRules().get(DO_DAYLIGHT_CYCLE_TC).set(world.getGameRules().getBoolean(DO_DAYLIGHT_CYCLE_TC), server);
 
             if (!world.isRemote() && !Config.sync_to_system_time.get())
             {
@@ -97,7 +97,7 @@ public class TimeEvents
                 event.side == LogicalSide.CLIENT
                         && event.phase == TickEvent.Phase.START
 //                        && !event.player.world.getDimensionType().doesFixedTimeExist()
-                        && event.player.world.func_234923_W_() == World.field_234918_g_
+                        && event.player.world.getDimensionKey() == World.OVERWORLD
 
         )
         {
@@ -110,14 +110,13 @@ public class TimeEvents
         if (
                 event.side == LogicalSide.SERVER
                         && event.phase == TickEvent.Phase.START
-                        && event.world.func_234923_W_() == World.field_234918_g_
+                        && event.world.getDimensionKey() == World.OVERWORLD
         )
         {
             SERVER.tick(event.world);
         }
     }
 
-    //TODO custom command to change settings without having to edit the config?
     public static void onCommand(CommandEvent event)
     {
         if (DO_DAYLIGHT_CYCLE_TC != null && event.getException() == null && event.getParseResults().getReader().getString().contains(TIME_STRING))
