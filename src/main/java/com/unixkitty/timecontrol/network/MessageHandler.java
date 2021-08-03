@@ -11,10 +11,7 @@ import net.minecraftforge.fml.network.NetworkEvent;
 import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
 
-import java.util.Optional;
 import java.util.function.Supplier;
-
-import static net.minecraftforge.fml.network.NetworkDirection.PLAY_TO_CLIENT;
 
 public class MessageHandler
 {
@@ -43,16 +40,14 @@ public class MessageHandler
                 TimeMessageToClient.class,
                 TimeMessageToClient::encode,
                 TimeMessageToClient::decode,
-                MessageHandler::handleClientMessage,
-                Optional.of(PLAY_TO_CLIENT)
+                MessageHandler::handleClientMessage
         );
         INSTANCE.registerMessage(
                 GAMERULE_MESSAGE_ID,
                 GameruleMessageToClient.class,
                 GameruleMessageToClient::encode,
                 GameruleMessageToClient::decode,
-                MessageHandler::handleClientMessage,
-                Optional.of(PLAY_TO_CLIENT)
+                MessageHandler::handleClientMessage
         );
     }
 

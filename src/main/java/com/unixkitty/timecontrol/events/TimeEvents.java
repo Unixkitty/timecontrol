@@ -20,13 +20,17 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
+import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
-import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.event.CommandEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.world.SleepFinishedTimeEvent;
 import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.LogicalSide;
+import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 
@@ -35,6 +39,7 @@ import java.util.Optional;
 import static net.minecraft.world.GameRules.DO_DAYLIGHT_CYCLE;
 
 @SuppressWarnings("unused")
+@Mod.EventBusSubscriber(modid = TimeControl.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class TimeEvents
 {
     public static GameRules.RuleKey<GameRules.BooleanValue> DO_DAYLIGHT_CYCLE_TC = null;
@@ -46,34 +51,28 @@ public class TimeEvents
     private static final String ACTION_ADD = "add";
     private static final String ACTION_SET = "set";
 
-    /*
-        BEGIN modEventBus
-     */
-
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event)
     {
         StartupEvents.initGamerule(false);
     }
 
+    @SubscribeEvent
     public static void onCommonSetup(FMLCommonSetupEvent event)
     {
-        StartupEvents.initGamerule(false);
         MessageHandler.init();
-        MinecraftForge.EVENT_BUS.addListener(StartupEvents::onRegisterCommands);
     }
 
-    /*
-        BEGIN MinecraftForge.EVENT_BUS
-     */
-
-    //TODO implement custom time multipliers for dimensions other than the Overoworld using world.getDimensionType().doesFixedTimeExist()
+    //TODO test whether time ends up being the same after server restart
+    @SubscribeEvent
     public static void onWorldLoad(WorldEvent.Load event)
     {
-        if (DO_DAYLIGHT_CYCLE_TC == null || !(event.getWorld() instanceof World)) return;
+        if (DO_DAYLIGHT_CYCLE_TC == null) return;
 
-        World world = (World) event.getWorld();
+        World world = event.getWorld().getWorld();
 
-        if (world.getDimensionKey() == World.OVERWORLD)
+        if (world.getDimension().getType() == DimensionType.OVERWORLD)
         {
             MinecraftServer server = null;
 
@@ -84,6 +83,8 @@ public class TimeEvents
 
             world.getGameRules().get(DO_DAYLIGHT_CYCLE).set(false, server);
 
+//            world.getGameRules().get(DO_DAYLIGHT_CYCLE_TC).set(world.getGameRules().getBoolean(DO_DAYLIGHT_CYCLE_TC), server);
+
             if (!world.isRemote() && !Config.sync_to_system_time.get())
             {
                 updateServer(world.getDayTime());
@@ -91,32 +92,34 @@ public class TimeEvents
         }
     }
 
+    @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event)
     {
         if (
                 event.side == LogicalSide.CLIENT
                         && event.phase == TickEvent.Phase.START
-//                        && !event.player.world.getDimensionType().doesFixedTimeExist()
-                        && event.player.world.getDimensionKey() == World.OVERWORLD
-
+                        && event.player.world.dimension.getType() == DimensionType.OVERWORLD
         )
         {
             CLIENT.tick(event.player.world);
         }
     }
 
+    @SubscribeEvent
     public static void onWorldTick(TickEvent.WorldTickEvent event)
     {
         if (
                 event.side == LogicalSide.SERVER
                         && event.phase == TickEvent.Phase.START
-                        && event.world.getDimensionKey() == World.OVERWORLD
+                        && event.world.dimension.getType() == DimensionType.OVERWORLD
         )
         {
             SERVER.tick(event.world);
         }
     }
 
+    //TODO custom command to change settings without having to edit the config?
+    @SubscribeEvent
     public static void onCommand(CommandEvent event)
     {
         if (DO_DAYLIGHT_CYCLE_TC != null && event.getException() == null && event.getParseResults().getReader().getString().contains(TIME_STRING))
@@ -185,6 +188,7 @@ public class TimeEvents
         }
     }
 
+    @SubscribeEvent
     public static void onSleepFinished(SleepFinishedTimeEvent event)
     {
         if (event.getWorld() instanceof ServerWorld)

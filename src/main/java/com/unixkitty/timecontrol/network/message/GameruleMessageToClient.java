@@ -5,7 +5,7 @@ import com.unixkitty.timecontrol.events.TimeEvents;
 import com.unixkitty.timecontrol.network.MessageHandler;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.world.GameRules;
-import net.minecraft.world.World;
+import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.fml.network.PacketDistributor;
 
@@ -82,7 +82,7 @@ public class GameruleMessageToClient implements IMessage
         final boolean modRule = world.getGameRules().getBoolean(TimeEvents.DO_DAYLIGHT_CYCLE_TC);
 
         MessageHandler.INSTANCE.send(
-                PacketDistributor.DIMENSION.with(() -> World.OVERWORLD),
+                PacketDistributor.DIMENSION.with(() -> DimensionType.OVERWORLD),
                 new GameruleMessageToClient(vanillaRule, modRule)
         );
     }

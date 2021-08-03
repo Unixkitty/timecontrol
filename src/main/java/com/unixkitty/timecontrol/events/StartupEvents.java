@@ -1,12 +1,12 @@
 package com.unixkitty.timecontrol.events;
 
-import com.unixkitty.timecontrol.CommandTimeControl;
 import com.unixkitty.timecontrol.TimeControl;
 import net.minecraft.command.impl.GameRuleCommand;
 import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.world.GameRules;
-import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DeferredWorkQueue;
+import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.event.server.FMLServerAboutToStartEvent;
 
@@ -14,13 +14,33 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 @SuppressWarnings("unused")
+@Mod.EventBusSubscriber
 public class StartupEvents
 {
-    public static void onRegisterCommands(RegisterCommandsEvent event)
-    {
-        CommandTimeControl.register(event.getDispatcher());
-    }
 
+/*    @OnlyIn(Dist.DEDICATED_SERVER)
+    @SubscribeEvent
+    public static void onServerSetup(FMLServerAboutToStartEvent event)
+    {
+        initGamerule(true);
+
+        try
+        {
+            Field commandManagerField = ObfuscationReflectionHelper.findField(MinecraftServer.class, "field_195579_af");
+
+            commandManagerField.setAccessible(true);
+
+            commandManagerField.set(event.getServer(), new Commands(true));
+        }
+        catch (IllegalAccessException e)
+        {
+            TimeControl.log().error("Failed to reinstantiate Commands on dedicated server, may not be possible to set custom gamerule in-game");
+
+            e.printStackTrace();
+        }
+    }*/
+
+    @SubscribeEvent
     public static void onServerSetup(FMLServerAboutToStartEvent event)
     {
         if (event.getServer() instanceof DedicatedServer)
@@ -28,8 +48,8 @@ public class StartupEvents
             initGamerule(true);
         }
 
-        //TODO move to onRegisterCommands
         GameRuleCommand.register(event.getServer().getCommandManager().getDispatcher());
+//        GameRuleCommand.register(event.getCommandDispatcher());
     }
 
     static void initGamerule(boolean dedicatedServer)
@@ -53,14 +73,13 @@ public class StartupEvents
         }
     }
 
-    @SuppressWarnings("unchecked")
     private static void _initGamerule(Method method)
     {
         try
         {
             Object boolTrue = method.invoke(GameRules.BooleanValue.class, true);
 
-            TimeEvents.DO_DAYLIGHT_CYCLE_TC = GameRules.register("doDaylightCycle_tc", GameRules.Category.UPDATES, (GameRules.RuleType<GameRules.BooleanValue>) boolTrue);
+            TimeEvents.DO_DAYLIGHT_CYCLE_TC = GameRules.register("doDaylightCycle_tc", (GameRules.RuleType<GameRules.BooleanValue>) boolTrue);
 
             TimeControl.log().info("Registered custom gamerule");
         }
