@@ -32,7 +32,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 
 import java.util.Optional;
 
-import static net.minecraft.world.GameRules.DO_DAYLIGHT_CYCLE;
+import static net.minecraft.world.GameRules.RULE_DAYLIGHT;
 
 @SuppressWarnings("unused")
 public class TimeEvents
@@ -73,18 +73,18 @@ public class TimeEvents
 
         World world = (World) event.getWorld();
 
-        if (world.getDimensionKey() == World.OVERWORLD)
+        if (world.dimension() == World.OVERWORLD)
         {
             MinecraftServer server = null;
 
-            if (!world.isRemote() && world instanceof ServerWorld)
+            if (!world.isClientSide() && world instanceof ServerWorld)
             {
                 server = ((ServerWorld) world).getServer();
             }
 
-            world.getGameRules().get(DO_DAYLIGHT_CYCLE).set(false, server);
+            world.getGameRules().getRule(RULE_DAYLIGHT).set(false, server);
 
-            if (!world.isRemote() && !Config.sync_to_system_time.get())
+            if (!world.isClientSide() && !Config.sync_to_system_time.get())
             {
                 updateServer(world.getDayTime());
             }
@@ -97,11 +97,11 @@ public class TimeEvents
                 event.side == LogicalSide.CLIENT
                         && event.phase == TickEvent.Phase.START
 //                        && !event.player.world.getDimensionType().doesFixedTimeExist()
-                        && event.player.world.getDimensionKey() == World.OVERWORLD
+                        && event.player.level.dimension() == World.OVERWORLD
 
         )
         {
-            CLIENT.tick(event.player.world);
+            CLIENT.tick(event.player.level);
         }
     }
 
@@ -110,7 +110,7 @@ public class TimeEvents
         if (
                 event.side == LogicalSide.SERVER
                         && event.phase == TickEvent.Phase.START
-                        && event.world.getDimensionKey() == World.OVERWORLD
+                        && event.world.dimension() == World.OVERWORLD
         )
         {
             SERVER.tick(event.world);
@@ -133,7 +133,7 @@ public class TimeEvents
 
                 if (Config.sync_to_system_time.get())
                 {
-                    sender.sendErrorMessage(new CommandException(new TranslationTextComponent("text.timecontrol.change_time_when_system", action, TIME_STRING)).getComponent());
+                    sender.sendFailure(new CommandException(new TranslationTextComponent("text.timecontrol.change_time_when_system", action, TIME_STRING)).getComponent());
                     event.setCanceled(true);
                     return;
                 }
@@ -202,12 +202,12 @@ public class TimeEvents
 
         if (updateMessage instanceof GameruleMessageToClient)
         {
-            ClientWorld world = Minecraft.getInstance().world;
+            ClientWorld world = Minecraft.getInstance().level;
 
             if (world != null)
             {
-                world.getGameRules().get(DO_DAYLIGHT_CYCLE).set(((GameruleMessageToClient) updateMessage).getVanillaRule(), null);
-                world.getGameRules().get(DO_DAYLIGHT_CYCLE_TC).set(((GameruleMessageToClient) updateMessage).getModRule(), null);
+                world.getGameRules().getRule(RULE_DAYLIGHT).set(((GameruleMessageToClient) updateMessage).getVanillaRule(), null);
+                world.getGameRules().getRule(DO_DAYLIGHT_CYCLE_TC).set(((GameruleMessageToClient) updateMessage).getModRule(), null);
             }
         }
     }

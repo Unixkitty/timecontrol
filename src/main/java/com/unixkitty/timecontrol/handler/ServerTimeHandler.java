@@ -21,8 +21,6 @@ public class ServerTimeHandler implements ITimeHandler
 {
     private static final Logger log = LogManager.getLogger(ServerTimeHandler.class.getSimpleName());
 
-//    private static final Method wakeAllPlayers = ReflectionHelper.findMethod(WorldServer.class, "wakeAllPlayers", "func_73053_d");
-
     private static final Field allPlayersSleeping = ObfuscationReflectionHelper.findField(ServerWorld.class, "field_73068_P");
     private static boolean accessCheck = false;
 
@@ -51,7 +49,7 @@ public class ServerTimeHandler implements ITimeHandler
 
         if (Config.sync_to_system_time.get())
         {
-            if (!serverWorld.isRemote && serverWorld.getServer().getTickCounter() % Config.sync_to_system_time_rate.get() == 0)
+            if (!serverWorld.isClientSide && serverWorld.getServer().getTickCount() % Config.sync_to_system_time_rate.get() == 0)
             {
                 syncTimeWithSystem(serverWorld);
             }
@@ -75,7 +73,7 @@ public class ServerTimeHandler implements ITimeHandler
                 {
                     long l = serverWorld.getDayTime() + 24000L;
 
-                    ((ServerWorldInfo) serverWorld.getWorldInfo()).setDayTime(net.minecraftforge.event.ForgeEventFactory.onSleepFinished(serverWorld, l - l % 24000L, serverWorld.getDayTime()));
+                    ((ServerWorldInfo) serverWorld.getLevelData()).setDayTime(net.minecraftforge.event.ForgeEventFactory.onSleepFinished(serverWorld, l - l % 24000L, serverWorld.getDayTime()));
                 }
 
                 customtime++;
@@ -83,7 +81,7 @@ public class ServerTimeHandler implements ITimeHandler
                 Numbers.setWorldtime(serverWorld, customtime, multiplier);
             }
 
-            if (serverWorld.getServer().getTickCounter() % 20 == 0)
+            if (serverWorld.getServer().getTickCount() % 20 == 0)
             {
                 //Dummy update to detect config changes
                 TimeEvents.updateServer(serverWorld.getDayTime());
@@ -124,8 +122,8 @@ public class ServerTimeHandler implements ITimeHandler
     {
         try
         {
-            return allPlayersSleeping.getBoolean(world) && world.getPlayers().stream().noneMatch(
-                    serverPlayerEntity -> !serverPlayerEntity.isSpectator() && !serverPlayerEntity.isPlayerFullyAsleep()
+            return allPlayersSleeping.getBoolean(world) && world.players().stream().noneMatch(
+                    serverPlayerEntity -> !serverPlayerEntity.isSpectator() && !serverPlayerEntity.isSleepingLongEnough()
             );
         }
         catch (IllegalAccessException e)
@@ -160,7 +158,7 @@ public class ServerTimeHandler implements ITimeHandler
 
             this.lastMinute = minute;
 
-            ((ServerWorldInfo) world.getWorldInfo()).setDayTime(time);
+            ((ServerWorldInfo) world.getLevelData()).setDayTime(time);
 
             if (Config.debugMode.get())
             {

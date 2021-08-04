@@ -49,7 +49,7 @@ public class ClientTimeHandler implements ITimeHandler
                 log.info(String.format("Client time: %s | multiplier: %s | gamerules: %s, %s",
                         worldtime,
                         multiplier,
-                        world.getGameRules().getBoolean(GameRules.DO_DAYLIGHT_CYCLE),
+                        world.getGameRules().getBoolean(GameRules.RULE_DAYLIGHT),
                         world.getGameRules().getBoolean(TimeEvents.DO_DAYLIGHT_CYCLE_TC)
                 ));
             }

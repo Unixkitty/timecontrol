@@ -29,7 +29,7 @@ public class StartupEvents
         }
 
         //TODO move to onRegisterCommands
-        GameRuleCommand.register(event.getServer().getCommandManager().getDispatcher());
+        GameRuleCommand.register(event.getServer().getCommands().getDispatcher());
     }
 
     static void initGamerule(boolean dedicatedServer)

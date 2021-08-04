@@ -78,7 +78,7 @@ public class GameruleMessageToClient implements IMessage
 
     public static void send(@Nonnull ServerWorld world)
     {
-        final boolean vanillaRule = world.getGameRules().getBoolean(GameRules.DO_DAYLIGHT_CYCLE);
+        final boolean vanillaRule = world.getGameRules().getBoolean(GameRules.RULE_DAYLIGHT);
         final boolean modRule = world.getGameRules().getBoolean(TimeEvents.DO_DAYLIGHT_CYCLE_TC);
 
         MessageHandler.INSTANCE.send(
