@@ -6,6 +6,7 @@ import com.unixkitty.timecontrol.events.TimeEvents;
 import com.unixkitty.timecontrol.network.MessageHandler;
 import com.unixkitty.timecontrol.network.message.GameruleMessageToClient;
 import com.unixkitty.timecontrol.network.message.TimeMessageToClient;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.storage.ServerWorldInfo;
@@ -69,11 +70,10 @@ public class ServerTimeHandler implements ITimeHandler
 
             if (serverWorld.getGameRules().getBoolean(TimeEvents.DO_DAYLIGHT_CYCLE_TC))
             {
+                //TODO what about Quark's "Improved Sleeping"?
                 if (areAllPlayersAsleep(serverWorld))
                 {
-                    long l = serverWorld.getDayTime() + 24000L;
-
-                    ((ServerWorldInfo) serverWorld.getLevelData()).setDayTime(net.minecraftforge.event.ForgeEventFactory.onSleepFinished(serverWorld, l - l % 24000L, serverWorld.getDayTime()));
+                    serverWorld.getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(true, serverWorld.getServer());
                 }
 
                 customtime++;

@@ -15,7 +15,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
-import net.minecraft.command.impl.TimeCommand;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.GameRules;
@@ -172,11 +171,7 @@ public class TimeEvents
 
                 if (time.isPresent())
                 {
-                    updateServer(
-                            action.equals(ACTION_SET) ?
-                                    TimeCommand.setTime(sender, time.get()) :
-                                    TimeCommand.addTime(sender, time.get())
-                    );
+                    updateServer(action.equals(ACTION_SET) ? time.get() : sender.getLevel().getDayTime() + time.get());
 
                     //We cancel on success
                     event.setCanceled(true);
@@ -189,7 +184,11 @@ public class TimeEvents
     {
         if (event.getWorld() instanceof ServerWorld)
         {
-            updateServer(event.getNewTime());
+            //We reset the rule back after letting vanilla handle wakey-wakey
+            if (((ServerWorld) event.getWorld()).getGameRules().getBoolean(DO_DAYLIGHT_CYCLE_TC))
+            {
+                ((ServerWorld) event.getWorld()).getGameRules().getRule(RULE_DAYLIGHT).set(false, ((ServerWorld) event.getWorld()).getServer());
+            }
         }
     }
 
