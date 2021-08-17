@@ -15,6 +15,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.GameRules;
@@ -26,9 +27,11 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.world.SleepFinishedTimeEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.LogicalSide;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import static net.minecraft.world.GameRules.RULE_DAYLIGHT;
@@ -184,6 +187,49 @@ public class TimeEvents
     {
         if (event.getWorld() instanceof ServerWorld)
         {
+            ServerWorld world = (ServerWorld) event.getWorld();
+
+            int dayTime = (int) (world.getDayTime() % 24000L);
+            int newTime = (int) (event.getNewTime() % 24000L);
+
+            //Adapted from mod Comforts for it's hammocks
+            if (ModList.get().isLoaded("comforts"))
+            {
+                final boolean[] activeHammock = {true};
+
+                for (PlayerEntity player : event.getWorld().players())
+                {
+                    player.getSleepingPos().ifPresent(bedPos -> {
+                        if (player.isSleepingLongEnough())
+                        {
+                            if (!Objects.requireNonNull(world.getBlockState(bedPos).getBlock().getRegistryName()).toString().startsWith("comforts:hammock_"))
+                            {
+                                activeHammock[0] = false;
+                            }
+                        }
+                    });
+
+                    if (!activeHammock[0])
+                    {
+//                        TimeControl.log().debug("onSleepFinished: not everyone is in hammocks");
+                        break;
+                    }
+                }
+
+                if (activeHammock[0] && world.isDay())
+                {
+//                    TimeControl.log().debug("onSleepFinished: everyone in hammocks");
+
+                    final long t = ((world.getDayTime() + 24000L) - (world.getDayTime() + 24000L) % 24000L) - 12001L;
+
+                    event.setTimeAddition(t);
+                    //nothing works without this line
+                    updateServer(t);
+                }
+            }
+
+//            TimeControl.log().debug("onSleepFinished called: dayTime " + dayTime + " | newTime " + newTime);
+
             //We reset the rule back after letting vanilla handle wakey-wakey
             if (((ServerWorld) event.getWorld()).getGameRules().getBoolean(DO_DAYLIGHT_CYCLE_TC))
             {
