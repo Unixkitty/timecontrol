@@ -1,4 +1,4 @@
-[![](https://cf.way2muchnoise.eu/title/303570.svg)](https://www.curseforge.com/minecraft/mc-mods/time-control)
+[![](http://cf.way2muchnoise.eu/title/303570.svg)](https://www.curseforge.com/minecraft/mc-mods/time-control)
 
 # Timecontrol
 
