@@ -136,6 +136,7 @@ dependencies {
 
 //    runtimeOnly project(":comforts")
     runtimeOnly fg.deobf("curse.maven:comforts-276951:3411197")
+    runtimeOnly fg.deobf("curse.maven:morpheus-69118:3215383")
 }
 
 jar {
