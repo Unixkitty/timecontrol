@@ -6,47 +6,43 @@ import com.unixkitty.timecontrol.events.TimeEvents;
 import com.unixkitty.timecontrol.network.MessageHandler;
 import com.unixkitty.timecontrol.network.message.GameruleMessageToClient;
 import com.unixkitty.timecontrol.network.message.TimeMessageToClient;
-import net.minecraft.world.GameRules;
-import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
-import net.minecraft.world.storage.ServerWorldInfo;
-import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
-import net.minecraftforge.fml.network.PacketDistributor;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.PrimaryLevelData;
+import net.minecraftforge.fmllegacy.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.lang.reflect.Field;
 import java.util.Calendar;
 
 public class ServerTimeHandler implements ITimeHandler
 {
     private static final Logger log = LogManager.getLogger(ServerTimeHandler.class.getSimpleName());
 
-    private static final Field allPlayersSleeping = ObfuscationReflectionHelper.findField(ServerWorld.class, "field_73068_P");
-    private static boolean accessCheck = false;
+//    private static final Field sleepStatusField = ObfuscationReflectionHelper.findField(ServerLevel.class, "f_143245_");
+//    private static boolean accessCheck = false;
 
-    /* System */
+    /* System time */
     private int lastMinute = 0;
-    /* System */
 
-    /* Arbitrary */
+    /* Arbitrary time */
     private long customtime;
     private double multiplier;
 
     private boolean wasDaytime = true;
-    /* Arbitrary */
 
-    static
+    /*static
     {
-        allPlayersSleeping.setAccessible(true);
-    }
+        sleepStatusField.setAccessible(true);
+    }*/
 
     @Override
-    public void tick(World world)
+    public void tick(Level world)
     {
         if (world.getServer() == null) return;
 
-        ServerWorld serverWorld = (ServerWorld) world;
+        ServerLevel serverWorld = (ServerLevel) world;
 
         if (Config.sync_to_system_time.get())
         {
@@ -118,15 +114,24 @@ public class ServerTimeHandler implements ITimeHandler
         updateClients();
     }
 
-    private boolean areAllPlayersAsleep(ServerWorld world)
+    private boolean areAllPlayersAsleep(ServerLevel world)
+    {
+        final int l = world.getGameRules().getInt(GameRules.RULE_PLAYERS_SLEEPING_PERCENTAGE);
+
+        return world.sleepStatus.areEnoughSleeping(l) && world.sleepStatus.areEnoughDeepSleeping(l, world.players());
+    }
+
+    /*private boolean areAllPlayersAsleep(ServerLevel world)
     {
         try
         {
-            return allPlayersSleeping.getBoolean(world) && world.players().stream().noneMatch(
-                    serverPlayerEntity -> !serverPlayerEntity.isSpectator() && !serverPlayerEntity.isSleepingLongEnough()
-            );
+            final int l = world.getGameRules().getInt(GameRules.RULE_PLAYERS_SLEEPING_PERCENTAGE);
+
+            SleepStatus sleepStatus = (SleepStatus) sleepStatusField.get(world);
+
+            return sleepStatus.areEnoughSleeping(l) && sleepStatus.areEnoughDeepSleeping(l, world.players());
         }
-        catch (IllegalAccessException e)
+        catch (Exception e)
         {
             if (!accessCheck)
             {
@@ -137,14 +142,14 @@ public class ServerTimeHandler implements ITimeHandler
         }
 
         return false;
-    }
+    }*/
 
     private void reset(long worldtime)
     {
         update(Numbers.customtime(worldtime), Numbers.multiplier(worldtime));
     }
 
-    private void syncTimeWithSystem(ServerWorld world)
+    private void syncTimeWithSystem(ServerLevel world)
     {
         Calendar calendar = Calendar.getInstance();
 
@@ -158,7 +163,7 @@ public class ServerTimeHandler implements ITimeHandler
 
             this.lastMinute = minute;
 
-            ((ServerWorldInfo) world.getLevelData()).setDayTime(time);
+            ((PrimaryLevelData) world.getLevelData()).setDayTime(time);
 
             if (Config.debugMode.get())
             {
@@ -170,7 +175,7 @@ public class ServerTimeHandler implements ITimeHandler
     private void updateClients()
     {
         MessageHandler.INSTANCE.send(
-                PacketDistributor.DIMENSION.with(() -> World.OVERWORLD),
+                PacketDistributor.DIMENSION.with(() -> Level.OVERWORLD),
                 new TimeMessageToClient(this.customtime, this.multiplier)
         );
     }

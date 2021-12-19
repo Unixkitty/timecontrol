@@ -1,7 +1,7 @@
 package com.unixkitty.timecontrol.network.message;
 
 import com.unixkitty.timecontrol.TimeControl;
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.network.FriendlyByteBuf;
 
 public class TimeMessageToClient implements IMessage
 {
@@ -40,7 +40,7 @@ public class TimeMessageToClient implements IMessage
         return !this.isMessageValid;
     }
 
-    public void encode(PacketBuffer buffer)
+    public void encode(FriendlyByteBuf buffer)
     {
         if (!isMessageValid) return;
 
@@ -48,7 +48,7 @@ public class TimeMessageToClient implements IMessage
         buffer.writeDouble(this.multiplier);
     }
 
-    public static TimeMessageToClient decode(PacketBuffer buffer)
+    public static TimeMessageToClient decode(FriendlyByteBuf buffer)
     {
         TimeMessageToClient message = new TimeMessageToClient();
 

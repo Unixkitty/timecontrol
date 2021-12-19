@@ -11,19 +11,21 @@ apply plugin: 'net.minecraftforge.gradle'
 // Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
 apply plugin: 'maven-publish'
 
+apply from: 'https://raw.githubusercontent.com/SizableShrimp/Forge-Class-Remapper/main/classremapper.gradle'
+
 version = mod_minecraft_version + "-" + mod_version
 group = mod_group + "." + mod_id// http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = mod_id
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(8) // Mojang ships Java 8 to end users, so your mod should target Java 8.
+java.toolchain.languageVersion = JavaLanguageVersion.of(16)
 
 println('Java: ' + System.getProperty('java.version') + ' JVM: ' + System.getProperty('java.vm.version') + '(' + System.getProperty('java.vendor') + ') Arch: ' + System.getProperty('os.arch'))
 
 minecraft {
     mappings channel: mappingsChannel, version: mappingsVersion
     // makeObfSourceJar = false // an Srg named sources jar is made by default. uncomment this to disable.
-    
-    // accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+
+    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
 
     // Default run configurations.
     runs {
@@ -135,8 +137,8 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
 //    runtimeOnly project(":comforts")
-    runtimeOnly fg.deobf("curse.maven:comforts-276951:3411197")
-    runtimeOnly fg.deobf("curse.maven:morpheus-69118:3215383")
+//    runtimeOnly fg.deobf("curse.maven:comforts-276951:3411197")
+//    runtimeOnly fg.deobf("curse.maven:morpheus-69118:3215383")
 }
 
 jar {

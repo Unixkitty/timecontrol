@@ -3,8 +3,8 @@ package com.unixkitty.timecontrol.handler;
 import com.unixkitty.timecontrol.Config;
 import com.unixkitty.timecontrol.Numbers;
 import com.unixkitty.timecontrol.events.TimeEvents;
-import net.minecraft.world.GameRules;
-import net.minecraft.world.World;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -18,7 +18,7 @@ public class ClientTimeHandler implements ITimeHandler
     private double multiplier = 0;
 
     @Override
-    public void tick(World world)
+    public void tick(Level world)
     {
         //In system time synchronization mode we simply depend on server time packets
         if (!Config.sync_to_system_time.get())

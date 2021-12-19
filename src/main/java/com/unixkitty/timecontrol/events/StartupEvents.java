@@ -2,16 +2,8 @@ package com.unixkitty.timecontrol.events;
 
 import com.unixkitty.timecontrol.CommandTimeControl;
 import com.unixkitty.timecontrol.TimeControl;
-import net.minecraft.command.impl.GameRuleCommand;
-import net.minecraft.server.dedicated.DedicatedServer;
-import net.minecraft.world.GameRules;
+import net.minecraft.world.level.GameRules;
 import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.fml.DeferredWorkQueue;
-import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
-import net.minecraftforge.fml.event.server.FMLServerAboutToStartEvent;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 
 @SuppressWarnings("unused")
 public class StartupEvents
@@ -21,54 +13,15 @@ public class StartupEvents
         CommandTimeControl.register(event.getDispatcher());
     }
 
-    public static void onServerSetup(FMLServerAboutToStartEvent event)
-    {
-        if (event.getServer() instanceof DedicatedServer)
-        {
-            initGamerule(true);
-        }
-
-        //TODO move to onRegisterCommands
-        GameRuleCommand.register(event.getServer().getCommands().getDispatcher());
-    }
-
-    static void initGamerule(boolean dedicatedServer)
+    static void initGamerule()
     {
         if (TimeEvents.DO_DAYLIGHT_CYCLE_TC != null)
         {
             return;
         }
 
-        Method createBoolean = ObfuscationReflectionHelper.findMethod(GameRules.BooleanValue.class, "func_223568_b", boolean.class);
+        TimeEvents.DO_DAYLIGHT_CYCLE_TC = GameRules.register("doDaylightCycle_tc", GameRules.Category.UPDATES, GameRules.BooleanValue.create(true));
 
-        createBoolean.setAccessible(true);
-
-        if (dedicatedServer)
-        {
-            _initGamerule(createBoolean);
-        }
-        else
-        {
-            DeferredWorkQueue.runLater(() -> _initGamerule(createBoolean));
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static void _initGamerule(Method method)
-    {
-        try
-        {
-            Object boolTrue = method.invoke(GameRules.BooleanValue.class, true);
-
-            TimeEvents.DO_DAYLIGHT_CYCLE_TC = GameRules.register("doDaylightCycle_tc", GameRules.Category.UPDATES, (GameRules.RuleType<GameRules.BooleanValue>) boolTrue);
-
-            TimeControl.log().info("Registered custom gamerule");
-        }
-        catch (IllegalAccessException | InvocationTargetException e)
-        {
-            TimeControl.log().error("Failed to create gamerule!");
-
-            e.printStackTrace();
-        }
+        TimeControl.log().info("Registered custom gamerule");
     }
 }

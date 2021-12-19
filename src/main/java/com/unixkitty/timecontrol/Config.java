@@ -4,6 +4,7 @@ import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.event.config.ModConfigEvent;
 
 @SuppressWarnings("CanBeFinal")
 @Mod.EventBusSubscriber(modid = TimeControl.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
@@ -45,15 +46,15 @@ public class Config
 
         {
             commonConfig.push(CATEGORY_SYSTEM);
-            sync_to_system_time = commonConfig.comment("Synchronize game world time with system time").define("sync_to_system_time", false);
-            sync_to_system_time_rate = commonConfig.comment("Sync time every n ticks").defineInRange("sync_to_system_time_rate", 20, 1, SYNC_TO_SYSTEM_TIME_RATE_LIMIT);
+            sync_to_system_time = commonConfig.comment("Synchronize game world time with system time").define(SYNC_TO_SYSTEM_TIME, false);
+            sync_to_system_time_rate = commonConfig.comment("Sync time every n ticks").defineInRange(SYNC_TO_SYSTEM_TIME_RATE, 20, 1, SYNC_TO_SYSTEM_TIME_RATE_LIMIT);
             commonConfig.pop();
         }
 
         {
             commonConfig.push(CATEGORY_ARBITRARY);
-            day_length_minutes = commonConfig.comment("How long daytime lasts (0 - " + Numbers.night_start + ")").defineInRange("day_length_minutes", 10, 1, LENGTH_LIMIT);
-            night_length_minutes = commonConfig.comment("How long nighttime lasts (" + Numbers.night_start + " - 24000)").defineInRange("night_length_minutes", 10, 1, LENGTH_LIMIT);
+            day_length_minutes = commonConfig.comment("How long daytime lasts (0 - " + Numbers.night_start + ")").defineInRange(DAY_LENGTH_MINUTES, 10, 1, LENGTH_LIMIT);
+            night_length_minutes = commonConfig.comment("How long nighttime lasts (" + Numbers.night_start + " - 24000)").defineInRange(NIGHT_LENGTH_MINUTES, 10, 1, LENGTH_LIMIT);
             commonConfig.pop();
         }
 
@@ -78,14 +79,14 @@ public class Config
 
     @SuppressWarnings("unused")
     @SubscribeEvent
-    public static void onLoad(final ModConfig.Loading event)
+    public static void onLoad(final ModConfigEvent.Loading event)
     {
         reload(event.getConfig());
     }
 
     @SuppressWarnings("unused")
     @SubscribeEvent
-    public static void onFileChange(final ModConfig.Reloading event)
+    public static void onFileChange(final ModConfigEvent.Reloading event)
     {
         reload(event.getConfig());
     }

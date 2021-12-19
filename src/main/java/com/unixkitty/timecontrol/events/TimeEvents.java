@@ -12,15 +12,15 @@ import com.unixkitty.timecontrol.network.message.GameruleMessageToClient;
 import com.unixkitty.timecontrol.network.message.IMessage;
 import com.unixkitty.timecontrol.network.message.TimeMessageToClient;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.commands.CommandRuntimeException;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.GameRules;
-import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.CommandEvent;
 import net.minecraftforge.event.TickEvent;
@@ -28,18 +28,16 @@ import net.minecraftforge.event.world.SleepFinishedTimeEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 
 import java.util.Objects;
 import java.util.Optional;
 
-import static net.minecraft.world.GameRules.RULE_DAYLIGHT;
+import static net.minecraft.world.level.GameRules.RULE_DAYLIGHT;
 
-@SuppressWarnings("unused")
 public class TimeEvents
 {
-    public static GameRules.RuleKey<GameRules.BooleanValue> DO_DAYLIGHT_CYCLE_TC = null;
+    public static GameRules.Key<GameRules.BooleanValue> DO_DAYLIGHT_CYCLE_TC = null;
 
     private static final ITimeHandler SERVER = new ServerTimeHandler();
     private static final ITimeHandler CLIENT = new ClientTimeHandler();
@@ -52,15 +50,10 @@ public class TimeEvents
         BEGIN modEventBus
      */
 
-    public static void onClientSetup(FMLClientSetupEvent event)
-    {
-        StartupEvents.initGamerule(false);
-    }
-
     public static void onCommonSetup(FMLCommonSetupEvent event)
     {
-        StartupEvents.initGamerule(false);
         MessageHandler.init();
+        StartupEvents.initGamerule();
         MinecraftForge.EVENT_BUS.addListener(StartupEvents::onRegisterCommands);
     }
 
@@ -71,17 +64,15 @@ public class TimeEvents
     //TODO implement custom time multipliers for dimensions other than the Overoworld using world.getDimensionType().doesFixedTimeExist()
     public static void onWorldLoad(WorldEvent.Load event)
     {
-        if (DO_DAYLIGHT_CYCLE_TC == null || !(event.getWorld() instanceof World)) return;
+        if (DO_DAYLIGHT_CYCLE_TC == null || !(event.getWorld() instanceof Level world)) return;
 
-        World world = (World) event.getWorld();
-
-        if (world.dimension() == World.OVERWORLD)
+        if (world.dimension() == Level.OVERWORLD)
         {
             MinecraftServer server = null;
 
-            if (!world.isClientSide() && world instanceof ServerWorld)
+            if (!world.isClientSide() && world instanceof ServerLevel)
             {
-                server = ((ServerWorld) world).getServer();
+                server = ((ServerLevel) world).getServer();
             }
 
             world.getGameRules().getRule(RULE_DAYLIGHT).set(false, server);
@@ -99,7 +90,7 @@ public class TimeEvents
                 event.side == LogicalSide.CLIENT
                         && event.phase == TickEvent.Phase.START
 //                        && !event.player.world.getDimensionType().doesFixedTimeExist()
-                        && event.player.level.dimension() == World.OVERWORLD
+                        && event.player.level.dimension() == Level.OVERWORLD
 
         )
         {
@@ -112,7 +103,7 @@ public class TimeEvents
         if (
                 event.side == LogicalSide.SERVER
                         && event.phase == TickEvent.Phase.START
-                        && event.world.dimension() == World.OVERWORLD
+                        && event.world.dimension() == Level.OVERWORLD
         )
         {
             SERVER.tick(event.world);
@@ -131,11 +122,11 @@ public class TimeEvents
 
                 if (!action.equals(ACTION_SET) && !action.equals(ACTION_ADD)) return;
 
-                final CommandSource sender = event.getParseResults().getContext().getSource();
+                final CommandSourceStack sender = event.getParseResults().getContext().getSource();
 
                 if (Config.sync_to_system_time.get())
                 {
-                    sender.sendFailure(new CommandException(new TranslationTextComponent("text.timecontrol.change_time_when_system", action, TIME_STRING)).getComponent());
+                    sender.sendFailure(new CommandRuntimeException(new TranslatableComponent("text.timecontrol.change_time_when_system", action, TIME_STRING)).getComponent());
                     event.setCanceled(true);
                     return;
                 }
@@ -185,19 +176,17 @@ public class TimeEvents
 
     public static void onSleepFinished(SleepFinishedTimeEvent event)
     {
-        if (event.getWorld() instanceof ServerWorld)
+        if (event.getWorld() instanceof ServerLevel world)
         {
-            ServerWorld world = (ServerWorld) event.getWorld();
-
-            int dayTime = (int) (world.getDayTime() % 24000L);
-            int newTime = (int) (event.getNewTime() % 24000L);
+            /*int dayTime = (int) (world.getDayTime() % 24000L);
+            int newTime = (int) (event.getNewTime() % 24000L);*/
 
             //Adapted from mod Comforts for it's hammocks
             if (ModList.get().isLoaded("comforts"))
             {
                 final boolean[] activeHammock = {true};
 
-                for (PlayerEntity player : event.getWorld().players())
+                for (Player player : event.getWorld().players())
                 {
                     player.getSleepingPos().ifPresent(bedPos -> {
                         if (player.isSleepingLongEnough())
@@ -211,15 +200,12 @@ public class TimeEvents
 
                     if (!activeHammock[0])
                     {
-//                        TimeControl.log().debug("onSleepFinished: not everyone is in hammocks");
                         break;
                     }
                 }
 
                 if (activeHammock[0] && world.isDay())
                 {
-//                    TimeControl.log().debug("onSleepFinished: everyone in hammocks");
-
                     final long t = ((world.getDayTime() + 24000L) - (world.getDayTime() + 24000L) % 24000L) - 12001L;
 
                     event.setTimeAddition(t);
@@ -231,9 +217,9 @@ public class TimeEvents
 //            TimeControl.log().debug("onSleepFinished called: dayTime " + dayTime + " | newTime " + newTime);
 
             //We reset the rule back after letting vanilla handle wakey-wakey
-            if (((ServerWorld) event.getWorld()).getGameRules().getBoolean(DO_DAYLIGHT_CYCLE_TC))
+            if (((ServerLevel) event.getWorld()).getGameRules().getBoolean(DO_DAYLIGHT_CYCLE_TC))
             {
-                ((ServerWorld) event.getWorld()).getGameRules().getRule(RULE_DAYLIGHT).set(false, ((ServerWorld) event.getWorld()).getServer());
+                ((ServerLevel) event.getWorld()).getGameRules().getRule(RULE_DAYLIGHT).set(false, ((ServerLevel) event.getWorld()).getServer());
             }
         }
     }
@@ -247,7 +233,7 @@ public class TimeEvents
 
         if (updateMessage instanceof GameruleMessageToClient)
         {
-            ClientWorld world = Minecraft.getInstance().level;
+            ClientLevel world = Minecraft.getInstance().level;
 
             if (world != null)
             {

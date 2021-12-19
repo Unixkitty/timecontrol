@@ -5,16 +5,17 @@ import com.unixkitty.timecontrol.events.TimeEvents;
 import com.unixkitty.timecontrol.network.message.GameruleMessageToClient;
 import com.unixkitty.timecontrol.network.message.IMessage;
 import com.unixkitty.timecontrol.network.message.TimeMessageToClient;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.fml.LogicalSide;
-import net.minecraftforge.fml.network.NetworkEvent;
-import net.minecraftforge.fml.network.NetworkRegistry;
-import net.minecraftforge.fml.network.simple.SimpleChannel;
+import net.minecraftforge.fmllegacy.network.NetworkEvent;
+import net.minecraftforge.fmllegacy.network.NetworkRegistry;
+import net.minecraftforge.fmllegacy.network.simple.SimpleChannel;
 
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static net.minecraftforge.fml.network.NetworkDirection.PLAY_TO_CLIENT;
+import static net.minecraftforge.fmllegacy.network.NetworkDirection.PLAY_TO_CLIENT;
+
 
 public class MessageHandler
 {
@@ -70,7 +71,7 @@ public class MessageHandler
 
         if (sideReceived != LogicalSide.CLIENT || message.isMessageInvalid())
         {
-            TimeControl.log().warn(message.getClass().getSimpleName() + " was invalid: side " + sideReceived + ", message: " + message.toString());
+            TimeControl.log().warn(message.getClass().getSimpleName() + " was invalid: side " + sideReceived + ", message: " + message);
             return;
         }
 

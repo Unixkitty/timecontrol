@@ -1,11 +1,12 @@
 package com.unixkitty.timecontrol;
 
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.world.World;
-import net.minecraft.world.storage.IWorldInfo;
-import net.minecraft.world.storage.ServerWorldInfo;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.LevelData;
+import net.minecraft.world.level.storage.PrimaryLevelData;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Collections;
 
 public class Numbers
@@ -30,18 +31,18 @@ public class Numbers
         return (long) ((customtime / multiplier) % 2147483647L);
     }
 
-    public static void setWorldtime(World world, long customtime, double multiplier)
+    public static void setWorldtime(Level world, long customtime, double multiplier)
     {
-        IWorldInfo worldInfo = world.getLevelData();
+        LevelData worldInfo = world.getLevelData();
         long worldtime = worldtime(customtime, multiplier);
 
-        if (world.isClientSide() && worldInfo instanceof ClientWorld.ClientWorldInfo)
+        if (world.isClientSide() && worldInfo instanceof ClientLevel.ClientLevelData)
         {
-            ((ClientWorld.ClientWorldInfo) worldInfo).setDayTime(worldtime);
+            ((ClientLevel.ClientLevelData) worldInfo).setDayTime(worldtime);
         }
-        else if (worldInfo instanceof ServerWorldInfo)
+        else if (worldInfo instanceof PrimaryLevelData)
         {
-            ((ServerWorldInfo) worldInfo).setDayTime(worldtime);
+            ((PrimaryLevelData) worldInfo).setDayTime(worldtime);
         }
     }
 
@@ -86,7 +87,7 @@ public class Numbers
 
     private static double multiplier(boolean dayMultiplier)
     {
-        return new BigDecimal(String.valueOf((double) (dayMultiplier ? Config.day_length_minutes.get() : Config.night_length_minutes.get()) / 10.0)).setScale(2, BigDecimal.ROUND_HALF_EVEN).doubleValue();
+        return new BigDecimal(String.valueOf((double) (dayMultiplier ? Config.day_length_minutes.get() : Config.night_length_minutes.get()) / 10.0)).setScale(2, RoundingMode.HALF_EVEN).doubleValue();
     }
 
     /**

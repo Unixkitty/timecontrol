@@ -3,13 +3,13 @@ package com.unixkitty.timecontrol;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.Commands;
-import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.TextComponent;
 
 public class CommandTimeControl
 {
-    public static void register(CommandDispatcher<CommandSource> dispatcher)
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher)
     {
         dispatcher.register(Commands.literal(TimeControl.MODID).requires(commandSource -> commandSource.hasPermission(2)).then(
                         Commands.literal("set")/*.then(
@@ -42,7 +42,7 @@ public class CommandTimeControl
         );
     }
 
-    private static int setLengthMinutes(CommandContext<CommandSource> context, boolean day)
+    private static int setLengthMinutes(CommandContext<CommandSourceStack> context, boolean day)
     {
         final int value = IntegerArgumentType.getInteger(context, "value");
 
@@ -67,9 +67,9 @@ public class CommandTimeControl
         return sendFeedback(context.getSource(), Config.SYNC_TO_SYSTEM_TIME, value, true);
     }*/
 
-    private static int sendFeedback(final CommandSource source, final String valueName, final Object value, boolean allowLogging)
+    private static int sendFeedback(final CommandSourceStack source, final String valueName, final Object value, boolean allowLogging)
     {
-        source.sendSuccess(new StringTextComponent(valueName + " = " + value), allowLogging);
+        source.sendSuccess(new TextComponent(valueName + " = " + value), allowLogging);
 
         return 0;
     }

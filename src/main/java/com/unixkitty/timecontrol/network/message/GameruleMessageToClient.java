@@ -3,11 +3,11 @@ package com.unixkitty.timecontrol.network.message;
 import com.unixkitty.timecontrol.TimeControl;
 import com.unixkitty.timecontrol.events.TimeEvents;
 import com.unixkitty.timecontrol.network.MessageHandler;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.world.GameRules;
-import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
-import net.minecraftforge.fml.network.PacketDistributor;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.Level;
+import net.minecraftforge.fmllegacy.network.PacketDistributor;
 
 import javax.annotation.Nonnull;
 
@@ -48,7 +48,7 @@ public class GameruleMessageToClient implements IMessage
         return !this.isMessageValid;
     }
 
-    public void encode(PacketBuffer buffer)
+    public void encode(FriendlyByteBuf buffer)
     {
         if (!isMessageValid) return;
 
@@ -56,7 +56,7 @@ public class GameruleMessageToClient implements IMessage
         buffer.writeBoolean(this.modRuleValue);
     }
 
-    public static GameruleMessageToClient decode(PacketBuffer buffer)
+    public static GameruleMessageToClient decode(FriendlyByteBuf buffer)
     {
         GameruleMessageToClient message = new GameruleMessageToClient();
 
@@ -76,13 +76,13 @@ public class GameruleMessageToClient implements IMessage
         return message;
     }
 
-    public static void send(@Nonnull ServerWorld world)
+    public static void send(@Nonnull ServerLevel world)
     {
         final boolean vanillaRule = world.getGameRules().getBoolean(GameRules.RULE_DAYLIGHT);
         final boolean modRule = world.getGameRules().getBoolean(TimeEvents.DO_DAYLIGHT_CYCLE_TC);
 
         MessageHandler.INSTANCE.send(
-                PacketDistributor.DIMENSION.with(() -> World.OVERWORLD),
+                PacketDistributor.DIMENSION.with(() -> Level.OVERWORLD),
                 new GameruleMessageToClient(vanillaRule, modRule)
         );
     }

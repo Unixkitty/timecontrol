@@ -1,6 +1,5 @@
 package com.unixkitty.timecontrol;
 
-import com.unixkitty.timecontrol.events.StartupEvents;
 import com.unixkitty.timecontrol.events.TimeEvents;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -26,10 +25,10 @@ public class TimeControl
 
         final IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
-        MinecraftForge.EVENT_BUS.addListener(StartupEvents::onServerSetup);
+//        MinecraftForge.EVENT_BUS.addListener(StartupEvents::onServerSetup);
         MinecraftForge.EVENT_BUS.addListener(TimeEvents::onWorldLoad);
 
-        modEventBus.addListener(TimeEvents::onClientSetup);
+//        modEventBus.addListener(TimeEvents::onClientSetup);
         modEventBus.addListener(TimeEvents::onCommonSetup);
 
         MinecraftForge.EVENT_BUS.addListener(TimeEvents::onPlayerTick);
