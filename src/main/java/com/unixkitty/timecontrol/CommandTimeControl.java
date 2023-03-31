@@ -5,7 +5,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.Component;
 
 public class CommandTimeControl
 {
@@ -69,7 +69,7 @@ public class CommandTimeControl
 
     private static int sendFeedback(final CommandSourceStack source, final String valueName, final Object value, boolean allowLogging)
     {
-        source.sendSuccess(new TextComponent(valueName + " = " + value), allowLogging);
+        source.sendSuccess(Component.translatable(valueName + " = " + value), allowLogging);
 
         return 0;
     }

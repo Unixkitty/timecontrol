@@ -15,7 +15,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.commands.CommandRuntimeException;
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
@@ -24,11 +24,12 @@ import net.minecraft.world.level.Level;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.CommandEvent;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.world.SleepFinishedTimeEvent;
-import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.event.level.SleepFinishedTimeEvent;
+import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -62,9 +63,9 @@ public class TimeEvents
      */
 
     //TODO implement custom time multipliers for dimensions other than the Overoworld using world.getDimensionType().doesFixedTimeExist()
-    public static void onWorldLoad(WorldEvent.Load event)
+    public static void onWorldLoad(LevelEvent.Load event)
     {
-        if (DO_DAYLIGHT_CYCLE_TC == null || !(event.getWorld() instanceof Level world)) return;
+        if (DO_DAYLIGHT_CYCLE_TC == null || !(event.getLevel() instanceof Level world)) return;
 
         if (world.dimension() == Level.OVERWORLD)
         {
@@ -98,15 +99,15 @@ public class TimeEvents
         }
     }
 
-    public static void onWorldTick(TickEvent.WorldTickEvent event)
+    public static void onWorldTick(TickEvent.LevelTickEvent event)
     {
         if (
                 event.side == LogicalSide.SERVER
                         && event.phase == TickEvent.Phase.START
-                        && event.world.dimension() == Level.OVERWORLD
+                        && event.level.dimension() == Level.OVERWORLD
         )
         {
-            SERVER.tick(event.world);
+            SERVER.tick(event.level);
         }
     }
 
@@ -126,7 +127,7 @@ public class TimeEvents
 
                 if (Config.sync_to_system_time.get())
                 {
-                    sender.sendFailure(new CommandRuntimeException(new TranslatableComponent("text.timecontrol.change_time_when_system", action, TIME_STRING)).getComponent());
+                    sender.sendFailure(new CommandRuntimeException(Component.translatable("text.timecontrol.change_time_when_system", action, TIME_STRING)).getComponent());
                     event.setCanceled(true);
                     return;
                 }
@@ -176,7 +177,7 @@ public class TimeEvents
 
     public static void onSleepFinished(SleepFinishedTimeEvent event)
     {
-        if (event.getWorld() instanceof ServerLevel world)
+        if (event.getLevel() instanceof ServerLevel world)
         {
             /*int dayTime = (int) (world.getDayTime() % 24000L);
             int newTime = (int) (event.getNewTime() % 24000L);*/
@@ -186,12 +187,12 @@ public class TimeEvents
             {
                 final boolean[] activeHammock = {true};
 
-                for (Player player : event.getWorld().players())
+                for (Player player : event.getLevel().players())
                 {
                     player.getSleepingPos().ifPresent(bedPos -> {
                         if (player.isSleepingLongEnough())
                         {
-                            if (!Objects.requireNonNull(world.getBlockState(bedPos).getBlock().getRegistryName()).toString().startsWith("comforts:hammock_"))
+                            if (!Objects.requireNonNull(ForgeRegistries.BLOCKS.getKey(world.getBlockState(bedPos).getBlock())).toString().startsWith("comforts:hammock_"))
                             {
                                 activeHammock[0] = false;
                             }
@@ -217,9 +218,9 @@ public class TimeEvents
 //            TimeControl.log().debug("onSleepFinished called: dayTime " + dayTime + " | newTime " + newTime);
 
             //We reset the rule back after letting vanilla handle wakey-wakey
-            if (((ServerLevel) event.getWorld()).getGameRules().getBoolean(DO_DAYLIGHT_CYCLE_TC))
+            if (((ServerLevel) event.getLevel()).getGameRules().getBoolean(DO_DAYLIGHT_CYCLE_TC))
             {
-                ((ServerLevel) event.getWorld()).getGameRules().getRule(RULE_DAYLIGHT).set(false, ((ServerLevel) event.getWorld()).getServer());
+                ((ServerLevel) event.getLevel()).getGameRules().getRule(RULE_DAYLIGHT).set(false, ((ServerLevel) event.getLevel()).getServer());
             }
         }
     }
