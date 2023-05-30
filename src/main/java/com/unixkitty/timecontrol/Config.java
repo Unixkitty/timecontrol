@@ -11,7 +11,6 @@ import net.minecraftforge.fml.event.config.ModConfigEvent;
 public class Config
 {
     static ForgeConfigSpec COMMON_CONFIG;
-    //public static ForgeConfigSpec CLIENT_CONFIG; This will be needed for client-specific options
 
     private static final int SYNC_TO_SYSTEM_TIME_RATE_LIMIT = 864000;
     public static final int LENGTH_LIMIT = 178956;
@@ -67,27 +66,25 @@ public class Config
         COMMON_CONFIG = commonConfig.build();
     }
 
-    /*public static void save()
+    private static void reload(ModConfig config, ModConfig.Type type)
     {
-        COMMON_CONFIG.save();
-    }*/
-
-    private static void reload(ModConfig config)
-    {
-        COMMON_CONFIG.setConfig(config.getConfigData());
+        if (config.getModId().equals(TimeControl.MODID) && type == ModConfig.Type.COMMON)
+        {
+            COMMON_CONFIG.setConfig(config.getConfigData());
+        }
     }
 
     @SuppressWarnings("unused")
     @SubscribeEvent
     public static void onLoad(final ModConfigEvent.Loading event)
     {
-        reload(event.getConfig());
+        reload(event.getConfig(), event.getConfig().getType());
     }
 
     @SuppressWarnings("unused")
     @SubscribeEvent
     public static void onFileChange(final ModConfigEvent.Reloading event)
     {
-        reload(event.getConfig());
+        reload(event.getConfig(), event.getConfig().getType());
     }
 }

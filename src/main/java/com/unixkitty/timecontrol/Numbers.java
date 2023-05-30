@@ -80,11 +80,6 @@ public class Numbers
                 String.format(" %d/%d%s", item, total, addition);
     }
 
-    /*private static long minutesToTicks(int minutes)
-    {
-        return (long) minutes * 60 * 20;
-    }*/
-
     private static double multiplier(boolean dayMultiplier)
     {
         return new BigDecimal(String.valueOf((double) (dayMultiplier ? Config.day_length_minutes.get() : Config.night_length_minutes.get()) / 10.0)).setScale(2, RoundingMode.HALF_EVEN).doubleValue();

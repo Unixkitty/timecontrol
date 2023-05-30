@@ -28,7 +28,7 @@ minecraft {
     // Default run configurations.
     runs {
         client {
-            workingDirectory project.file('run')
+            workingDirectory project.file('run/client')
 
             // Recommended logging data for a userdev environment
             // The markers can be changed as needed.
@@ -50,7 +50,9 @@ minecraft {
         }
 
         server {
-            workingDirectory project.file('run')
+            workingDirectory project.file('run/server')
+
+            arg "nogui"
 
             // Recommended logging data for a userdev environment
             // The markers can be changed as needed.
@@ -72,7 +74,7 @@ minecraft {
         }
 
         data {
-            workingDirectory project.file('run')
+            workingDirectory project.file('run/client')
 
             // Recommended logging data for a userdev environment
             // The markers can be changed as needed.

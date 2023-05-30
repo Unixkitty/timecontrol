@@ -13,7 +13,6 @@ import org.apache.logging.log4j.Logger;
 @Mod(TimeControl.MODID)
 public class TimeControl
 {
-    // The MODID value here should match an entry in the META-INF/mods.toml file
     public static final String MODID = "timecontrol";
     public static final String MODNAME = "TimeControl";
 
@@ -25,10 +24,8 @@ public class TimeControl
 
         final IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
-//        MinecraftForge.EVENT_BUS.addListener(StartupEvents::onServerSetup);
         MinecraftForge.EVENT_BUS.addListener(TimeEvents::onWorldLoad);
 
-//        modEventBus.addListener(TimeEvents::onClientSetup);
         modEventBus.addListener(TimeEvents::onCommonSetup);
 
         MinecraftForge.EVENT_BUS.addListener(TimeEvents::onPlayerTick);

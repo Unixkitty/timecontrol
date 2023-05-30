@@ -20,22 +20,17 @@ public class ServerTimeHandler implements ITimeHandler
 {
     private static final Logger log = LogManager.getLogger(ServerTimeHandler.class.getSimpleName());
 
-//    private static final Field sleepStatusField = ObfuscationReflectionHelper.findField(ServerLevel.class, "f_143245_");
-//    private static boolean accessCheck = false;
-
     /* System time */
     private int lastMinute = 0;
 
     /* Arbitrary time */
+    public int dayMinutes = Config.day_length_minutes.get();
+    public int nightMinutes = Config.night_length_minutes.get();
+
     private long customtime;
     private double multiplier;
 
     private boolean wasDaytime = true;
-
-    /*static
-    {
-        sleepStatusField.setAccessible(true);
-    }*/
 
     @Override
     public void tick(Level world)
@@ -79,8 +74,11 @@ public class ServerTimeHandler implements ITimeHandler
 
             if (serverWorld.getServer().getTickCount() % 20 == 0)
             {
-                //Dummy update to detect config changes
-                TimeEvents.updateServer(serverWorld.getDayTime());
+                //Detect config changes
+                if (this.dayMinutes != Config.day_length_minutes.get() || this.nightMinutes != Config.night_length_minutes.get())
+                {
+                    TimeEvents.updateServer(serverWorld.getDayTime());
+                }
 
                 //This is to keep client multipliers in sync
                 updateClients();
@@ -90,16 +88,14 @@ public class ServerTimeHandler implements ITimeHandler
                 {
                     long updatedWorldtime = serverWorld.getDayTime();
 
-                    log.info(Numbers.progressString(updatedWorldtime, ""));
-
-                    log.info(String.format("Server time update: %s -> %s (%s -> %s) (day %s) | multiplier: %s",
+                    log.debug(Numbers.progressString(updatedWorldtime, String.format(" Server time update: %s -> %s (%s -> %s) (day %s) | multiplier: %s",
                             worldtime,
                             updatedWorldtime,
                             customtime - 1,
                             customtime,
                             Numbers.day(updatedWorldtime),
                             multiplier
-                    ));
+                    )));
                 }
             }
         }
@@ -120,29 +116,6 @@ public class ServerTimeHandler implements ITimeHandler
 
         return world.sleepStatus.areEnoughSleeping(l) && world.sleepStatus.areEnoughDeepSleeping(l, world.players());
     }
-
-    /*private boolean areAllPlayersAsleep(ServerLevel world)
-    {
-        try
-        {
-            final int l = world.getGameRules().getInt(GameRules.RULE_PLAYERS_SLEEPING_PERCENTAGE);
-
-            SleepStatus sleepStatus = (SleepStatus) sleepStatusField.get(world);
-
-            return sleepStatus.areEnoughSleeping(l) && sleepStatus.areEnoughDeepSleeping(l, world.players());
-        }
-        catch (Exception e)
-        {
-            if (!accessCheck)
-            {
-                e.printStackTrace();
-
-                accessCheck = true;
-            }
-        }
-
-        return false;
-    }*/
 
     private void reset(long worldtime)
     {

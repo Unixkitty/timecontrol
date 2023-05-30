@@ -24,8 +24,8 @@ import net.minecraft.world.level.Level;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.CommandEvent;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.level.SleepFinishedTimeEvent;
 import net.minecraftforge.event.level.LevelEvent;
+import net.minecraftforge.event.level.SleepFinishedTimeEvent;
 import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -140,19 +140,12 @@ public class TimeEvents
 
                 switch (argument)
                 {
-                    case "day":
-                        time = Optional.of(1000);
-                        break;
-                    case "noon":
-                        time = Optional.of(6000);
-                        break;
-                    case "night":
-                        time = Optional.of(13000);
-                        break;
-                    case "midnight":
-                        time = Optional.of(18000);
-                        break;
-                    case TIME_STRING:
+                    case "day" -> time = Optional.of(1000);
+                    case "noon" -> time = Optional.of(6000);
+                    case "night" -> time = Optional.of(13000);
+                    case "midnight" -> time = Optional.of(18000);
+                    case TIME_STRING ->
+                    {
                         try
                         {
                             time = Optional.of(context.getArgument(TIME_STRING, Integer.class));
@@ -161,7 +154,7 @@ public class TimeEvents
                         {
 
                         }
-                        break;
+                    }
                 }
 
                 if (time.isPresent())
@@ -179,9 +172,6 @@ public class TimeEvents
     {
         if (event.getLevel() instanceof ServerLevel world)
         {
-            /*int dayTime = (int) (world.getDayTime() % 24000L);
-            int newTime = (int) (event.getNewTime() % 24000L);*/
-
             //Adapted from mod Comforts for it's hammocks
             if (ModList.get().isLoaded("comforts"))
             {
@@ -215,8 +205,6 @@ public class TimeEvents
                 }
             }
 
-//            TimeControl.log().debug("onSleepFinished called: dayTime " + dayTime + " | newTime " + newTime);
-
             //We reset the rule back after letting vanilla handle wakey-wakey
             if (((ServerLevel) event.getLevel()).getGameRules().getBoolean(DO_DAYLIGHT_CYCLE_TC))
             {
@@ -231,8 +219,7 @@ public class TimeEvents
         {
             CLIENT.update(((TimeMessageToClient) updateMessage).getCustomtime(), ((TimeMessageToClient) updateMessage).getMultiplier());
         }
-
-        if (updateMessage instanceof GameruleMessageToClient)
+        else if (updateMessage instanceof GameruleMessageToClient)
         {
             ClientLevel world = Minecraft.getInstance().level;
 
@@ -247,5 +234,8 @@ public class TimeEvents
     public static void updateServer(long worldtime)
     {
         SERVER.update(Numbers.customtime(worldtime), Numbers.multiplier(worldtime));
+
+        ((ServerTimeHandler)SERVER).dayMinutes = Config.day_length_minutes.get();
+        ((ServerTimeHandler)SERVER).nightMinutes = Config.night_length_minutes.get();
     }
 }

@@ -46,7 +46,7 @@ public class ClientTimeHandler implements ITimeHandler
             {
                 long worldtime = world.getDayTime();
 
-                log.info(String.format("Client time: %s | multiplier: %s | gamerules: %s, %s",
+                log.debug(String.format("Client time: %s | multiplier: %s | gamerules: %s, %s",
                         worldtime,
                         multiplier,
                         world.getGameRules().getBoolean(GameRules.RULE_DAYLIGHT),
