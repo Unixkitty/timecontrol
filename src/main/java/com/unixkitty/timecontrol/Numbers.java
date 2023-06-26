@@ -69,7 +69,6 @@ public class Numbers
 
         int division = 100 / stringLength;
 
-        //return '\r' +
         return String.join("", Collections.nCopies(percent == 0 ? 2 : 2 - (int) (Math.log10(percent)), " ")) +
                 String.format(" %d%% [", percent) +
                 String.join("", Collections.nCopies(percent / division, "=")) +
@@ -80,14 +79,9 @@ public class Numbers
                 String.format(" %d/%d%s", item, total, addition);
     }
 
-    /*private static long minutesToTicks(int minutes)
-    {
-        return (long) minutes * 60 * 20;
-    }*/
-
     private static double multiplier(boolean dayMultiplier)
     {
-        return new BigDecimal(String.valueOf((double) (dayMultiplier ? Config.day_length_minutes.get() : Config.night_length_minutes.get()) / 10.0)).setScale(2, RoundingMode.HALF_EVEN).doubleValue();
+        return BigDecimal.valueOf((double) (dayMultiplier ? Config.day_length_minutes.get() : Config.night_length_minutes.get()) / 10.0).setScale(2, RoundingMode.HALF_EVEN).doubleValue();
     }
 
     /**
@@ -97,6 +91,8 @@ public class Numbers
      */
     public static boolean isDaytime(long worldtime)
     {
-        return (worldtime % 24000L) >= 0 && (worldtime % 24000L) < night_start;
+        final long l = worldtime % 24000L;
+
+        return l >= 0 && l < night_start;
     }
 }

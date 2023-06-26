@@ -1,105 +1,120 @@
 package com.unixkitty.timecontrol.handler;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.context.CommandContext;
 import com.unixkitty.timecontrol.Config;
 import com.unixkitty.timecontrol.Numbers;
-import com.unixkitty.timecontrol.events.TimeEvents;
-import com.unixkitty.timecontrol.network.MessageHandler;
-import com.unixkitty.timecontrol.network.message.GameruleMessageToClient;
-import com.unixkitty.timecontrol.network.message.TimeMessageToClient;
+import com.unixkitty.timecontrol.TimeControl;
+import com.unixkitty.timecontrol.network.ModNetworkDispatcher;
+import com.unixkitty.timecontrol.network.packet.GamerulesS2CPacket;
+import com.unixkitty.timecontrol.network.packet.TimeS2CPacket;
+import net.minecraft.commands.CommandRuntimeException;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.storage.PrimaryLevelData;
-import net.minecraftforge.network.PacketDistributor;
+import net.minecraftforge.event.CommandEvent;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.level.LevelEvent;
+import net.minecraftforge.event.level.SleepFinishedTimeEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.LogicalSide;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nonnull;
 import java.util.Calendar;
+import java.util.Objects;
 
-public class ServerTimeHandler implements ITimeHandler
+import static net.minecraft.world.level.GameRules.RULE_DAYLIGHT;
+
+@Mod.EventBusSubscriber(modid = TimeControl.MODID)
+public final class ServerTimeHandler extends TimeHandler
 {
-    private static final Logger log = LogManager.getLogger(ServerTimeHandler.class.getSimpleName());
+    private static final ServerTimeHandler instance = new ServerTimeHandler();
+    private static final Logger log = LogManager.getLogger();
 
-//    private static final Field sleepStatusField = ObfuscationReflectionHelper.findField(ServerLevel.class, "f_143245_");
-//    private static boolean accessCheck = false;
+    private static final String time_string = "time";
+    private static final String add_string = "add";
+    private static final String set_string = "set";
 
     /* System time */
     private int lastMinute = 0;
 
     /* Arbitrary time */
-    private long customtime;
-    private double multiplier;
-
     private boolean wasDaytime = true;
 
-    /*static
+    private ServerTimeHandler()
     {
-        sleepStatusField.setAccessible(true);
-    }*/
+    }
 
     @Override
-    public void tick(Level world)
+    public void tick(@Nonnull Level level)
     {
-        if (world.getServer() == null) return;
-
-        ServerLevel serverWorld = (ServerLevel) world;
-
-        if (Config.sync_to_system_time.get())
+        if (level instanceof ServerLevel serverLevel)
         {
-            if (!serverWorld.isClientSide && serverWorld.getServer().getTickCount() % Config.sync_to_system_time_rate.get() == 0)
+            if (Config.sync_to_system_time.get())
             {
-                syncTimeWithSystem(serverWorld);
-            }
-        }
-        else
-        {
-            long worldtime = serverWorld.getDayTime();
-
-            boolean isDaytime = Numbers.isDaytime(worldtime);
-
-            if (isDaytime != wasDaytime)
-            {
-                reset(worldtime);
-
-                wasDaytime = isDaytime;
-            }
-
-            if (serverWorld.getGameRules().getBoolean(TimeEvents.DO_DAYLIGHT_CYCLE_TC))
-            {
-                //TODO what about Quark's "Improved Sleeping"?
-                if (areAllPlayersAsleep(serverWorld))
+                if (!serverLevel.isClientSide && serverLevel.getServer().getTickCount() % Config.sync_to_system_time_rate.get() == 0)
                 {
-                    serverWorld.getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(true, serverWorld.getServer());
+                    syncTimeWithSystem(serverLevel);
+                }
+            }
+            else
+            {
+                long worldtime = serverLevel.getDayTime();
+
+                boolean isDaytime = Numbers.isDaytime(worldtime);
+
+                if (isDaytime != this.wasDaytime)
+                {
+                    reset(worldtime);
+
+                    this.wasDaytime = isDaytime;
                 }
 
-                customtime++;
-
-                Numbers.setWorldtime(serverWorld, customtime, multiplier);
-            }
-
-            if (serverWorld.getServer().getTickCount() % 20 == 0)
-            {
-                //Dummy update to detect config changes
-                TimeEvents.updateServer(serverWorld.getDayTime());
-
-                //This is to keep client multipliers in sync
-                updateClients();
-                GameruleMessageToClient.send(serverWorld);
-
-                if (Config.debugMode.get())
+                if (serverLevel.getGameRules().getBoolean(TimeControl.DO_DAYLIGHT_CYCLE_TC))
                 {
-                    long updatedWorldtime = serverWorld.getDayTime();
+                    //TODO what about Quark's "Improved Sleeping"?
+                    if (areAllPlayersAsleep(serverLevel))
+                    {
+                        serverLevel.getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(true, serverLevel.getServer());
+                    }
 
-                    log.info(Numbers.progressString(updatedWorldtime, ""));
+                    this.customtime++;
 
-                    log.info(String.format("Server time update: %s -> %s (%s -> %s) (day %s) | multiplier: %s",
-                            worldtime,
-                            updatedWorldtime,
-                            customtime - 1,
-                            customtime,
-                            Numbers.day(updatedWorldtime),
-                            multiplier
-                    ));
+                    Numbers.setWorldtime(serverLevel, this.customtime, this.multiplier);
+                }
+
+                if (serverLevel.getServer().getTickCount() % 20 == 0)
+                {
+                    //Dummy update to detect config changes
+                    ServerTimeHandler.update(serverLevel.getDayTime());
+
+                    //This is to keep client multipliers in sync
+                    updateClientsTime();
+                    ModNetworkDispatcher.send(new GamerulesS2CPacket(serverLevel), serverLevel.dimension());
+
+                    if (Config.debugMode.get())
+                    {
+                        long updatedWorldtime = serverLevel.getDayTime();
+
+                        log.info(Numbers.progressString(updatedWorldtime, ""));
+
+                        log.info(String.format("Server time update: %s -> %s (%s -> %s) (day %s) | multiplier: %s",
+                                worldtime,
+                                updatedWorldtime,
+                                this.customtime - 1,
+                                this.customtime,
+                                Numbers.day(updatedWorldtime),
+                                this.multiplier
+                        ));
+                    }
                 }
             }
         }
@@ -108,48 +123,34 @@ public class ServerTimeHandler implements ITimeHandler
     @Override
     public void update(long customtime, double multiplier)
     {
-        this.customtime = customtime;
-        this.multiplier = multiplier;
+        super.update(customtime, multiplier);
 
-        updateClients();
+        updateClientsTime();
     }
 
-    private boolean areAllPlayersAsleep(ServerLevel world)
+    private double getMultiplier()
     {
-        final int l = world.getGameRules().getInt(GameRules.RULE_PLAYERS_SLEEPING_PERCENTAGE);
-
-        return world.sleepStatus.areEnoughSleeping(l) && world.sleepStatus.areEnoughDeepSleeping(l, world.players());
+        return this.multiplier;
     }
 
-    /*private boolean areAllPlayersAsleep(ServerLevel world)
+    private long getCustomtime()
     {
-        try
-        {
-            final int l = world.getGameRules().getInt(GameRules.RULE_PLAYERS_SLEEPING_PERCENTAGE);
+        return this.customtime;
+    }
 
-            SleepStatus sleepStatus = (SleepStatus) sleepStatusField.get(world);
+    private boolean areAllPlayersAsleep(ServerLevel level)
+    {
+        final int l = level.getGameRules().getInt(GameRules.RULE_PLAYERS_SLEEPING_PERCENTAGE);
 
-            return sleepStatus.areEnoughSleeping(l) && sleepStatus.areEnoughDeepSleeping(l, world.players());
-        }
-        catch (Exception e)
-        {
-            if (!accessCheck)
-            {
-                e.printStackTrace();
-
-                accessCheck = true;
-            }
-        }
-
-        return false;
-    }*/
+        return level.sleepStatus.areEnoughSleeping(l) && level.sleepStatus.areEnoughDeepSleeping(l, level.players());
+    }
 
     private void reset(long worldtime)
     {
         update(Numbers.customtime(worldtime), Numbers.multiplier(worldtime));
     }
 
-    private void syncTimeWithSystem(ServerLevel world)
+    private void syncTimeWithSystem(ServerLevel level)
     {
         Calendar calendar = Calendar.getInstance();
 
@@ -158,12 +159,12 @@ public class ServerTimeHandler implements ITimeHandler
 
         if (minute != this.lastMinute)
         {
-            long worldtime = world.getDayTime();
+            long worldtime = level.getDayTime();
             long time = Numbers.systemtime(hour, minute, calendar.get(Calendar.DAY_OF_YEAR));
 
             this.lastMinute = minute;
 
-            ((PrimaryLevelData) world.getLevelData()).setDayTime(time);
+            level.setDayTime(time);
 
             if (Config.debugMode.get())
             {
@@ -172,11 +173,153 @@ public class ServerTimeHandler implements ITimeHandler
         }
     }
 
-    private void updateClients()
+    private void updateClientsTime()
     {
-        MessageHandler.INSTANCE.send(
-                PacketDistributor.DIMENSION.with(() -> Level.OVERWORLD),
-                new TimeMessageToClient(this.customtime, this.multiplier)
-        );
+        ModNetworkDispatcher.send(new TimeS2CPacket(this.customtime, this.multiplier), Level.OVERWORLD);
+    }
+
+    //TODO implement custom time multipliers for dimensions other than the Overoworld using world.getDimensionType().doesFixedTimeExist()
+    @SubscribeEvent
+    public static void onWorldLoad(final LevelEvent.Load event)
+    {
+        if (TimeControl.DO_DAYLIGHT_CYCLE_TC != null && event.getLevel() instanceof ServerLevel level && level.dimension() == Level.OVERWORLD)
+        {
+            level.getGameRules().getRule(RULE_DAYLIGHT).set(false, level.getServer());
+
+            if (!Config.sync_to_system_time.get())
+            {
+                update(level.getDayTime());
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onWorldTick(final TickEvent.LevelTickEvent event)
+    {
+        if (
+                event.side == LogicalSide.SERVER
+                        && event.phase == TickEvent.Phase.START
+                        && event.level.dimension() == Level.OVERWORLD
+        )
+        {
+            instance.tick(event.level);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onCommand(final CommandEvent event)
+    {
+        final CommandSourceStack sender = event.getParseResults().getContext().getSource();
+        final ServerLevel level = sender.getLevel();
+
+        if (TimeControl.DO_DAYLIGHT_CYCLE_TC != null && event.getException() == null && event.getParseResults().getReader().getString().contains(time_string) && level.dimension() == Level.OVERWORLD)
+        {
+            final CommandContext<?> context = event.getParseResults().getContext().build(event.getParseResults().getReader().getString());
+
+            if (context.hasNodes() && context.getNodes().get(0).getNode().getName().equals(time_string) && context.getNodes().size() == 3)
+            {
+                final String action = context.getNodes().get(1).getNode().getName();
+
+                if (!action.equals(set_string) && !action.equals(add_string)) return;
+
+                if (Config.sync_to_system_time.get())
+                {
+                    sender.sendFailure(new CommandRuntimeException(Component.translatable("text.timecontrol.change_time_when_system", action, time_string)).getComponent());
+                    event.setCanceled(true);
+
+                    return;
+                }
+
+                final String argument = context.getNodes().get(2).getNode().getName();
+
+                Integer time = null;
+
+                switch (argument)
+                {
+                    case "day" -> time = 1000;
+                    case "noon" -> time = 6000;
+                    case "night" -> time = 13000;
+                    case "midnight" -> time = 18000;
+                    case time_string ->
+                    {
+                        try
+                        {
+                            time = IntegerArgumentType.getInteger(context, time_string);
+                        }
+                        catch (IllegalArgumentException ignored)
+                        {
+
+                        }
+                    }
+                }
+
+                if (Config.debugMode.get())
+                {
+                    TimeControl.LOG.debug("Caught time command: /" + time_string + " " + action + " " + (time == null ? argument : time));
+                }
+
+                if (time != null)
+                {
+                    update(action.equals(set_string) ? time : level.getDayTime() + time);
+
+                    Numbers.setWorldtime(level, instance.getCustomtime(), instance.getMultiplier());
+
+                    //We cancel on success
+                    event.setCanceled(true);
+                }
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onSleepFinished(final SleepFinishedTimeEvent event)
+    {
+        if (event.getLevel() instanceof ServerLevel level)
+        {
+            //Adapted from mod Comforts for it's hammocks
+            if (ModList.get().isLoaded("comforts"))
+            {
+                final boolean[] activeHammock = {true};
+
+                for (Player player : event.getLevel().players())
+                {
+                    player.getSleepingPos().ifPresent(bedPos -> {
+                        if (player.isSleepingLongEnough())
+                        {
+                            if (!Objects.requireNonNull(ForgeRegistries.BLOCKS.getKey(level.getBlockState(bedPos).getBlock())).toString().startsWith("comforts:hammock_"))
+                            {
+                                activeHammock[0] = false;
+                            }
+                        }
+                    });
+
+                    if (!activeHammock[0])
+                    {
+                        break;
+                    }
+                }
+
+                if (activeHammock[0] && level.isDay())
+                {
+                    final long t = ((level.getDayTime() + 24000L) - (level.getDayTime() + 24000L) % 24000L) - 12001L;
+
+                    event.setTimeAddition(t);
+
+                    //nothing works without this line
+                    update(t);
+                }
+            }
+
+            //We reset the rule back after letting vanilla handle wakey-wakey
+            if (level.getGameRules().getBoolean(TimeControl.DO_DAYLIGHT_CYCLE_TC))
+            {
+                level.getGameRules().getRule(RULE_DAYLIGHT).set(false, level.getServer());
+            }
+        }
+    }
+
+    public static void update(long worldtime)
+    {
+        instance.update(Numbers.customtime(worldtime), Numbers.multiplier(worldtime));
     }
 }

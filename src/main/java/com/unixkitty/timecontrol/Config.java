@@ -67,11 +67,6 @@ public class Config
         COMMON_CONFIG = commonConfig.build();
     }
 
-    /*public static void save()
-    {
-        COMMON_CONFIG.save();
-    }*/
-
     private static void reload(ModConfig config)
     {
         COMMON_CONFIG.setConfig(config.getConfigData());
