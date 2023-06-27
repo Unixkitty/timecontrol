@@ -18,13 +18,16 @@ public class TimeControl
     // The MODID value here should match an entry in the META-INF/mods.toml file
     public static final String MODID = "timecontrol";
 
-    public static final Logger LOG = LogManager.getLogger();
+    public static final Logger LOG = LogManager.getLogger(TimeControl.class.getSimpleName());
 
     public static GameRules.Key<GameRules.BooleanValue> DO_DAYLIGHT_CYCLE_TC = null;
 
     public TimeControl()
     {
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.COMMON_CONFIG);
+        ModLoadingContext modLoadingContext = ModLoadingContext.get();
+
+        modLoadingContext.registerConfig(ModConfig.Type.SERVER, Config.SERVER_CONFIG);
+        modLoadingContext.registerConfig(ModConfig.Type.CLIENT, Config.CLIENT_CONFIG);
 
         FMLJavaModLoadingContext.get().getModEventBus().addListener(TimeControl::onCommonSetup);
     }
@@ -45,6 +48,6 @@ public class TimeControl
 
     public static void onRegisterCommands(final RegisterCommandsEvent event)
     {
-        CommandTimeControl.register(event.getDispatcher());
+        TimeControlCommand.register(event.getDispatcher());
     }
 }

@@ -28,7 +28,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
-import java.util.Calendar;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Objects;
 
 import static net.minecraft.world.level.GameRules.RULE_DAYLIGHT;
@@ -37,7 +38,7 @@ import static net.minecraft.world.level.GameRules.RULE_DAYLIGHT;
 public final class ServerTimeHandler extends TimeHandler
 {
     private static final ServerTimeHandler instance = new ServerTimeHandler();
-    private static final Logger log = LogManager.getLogger();
+    private static final Logger log = LogManager.getLogger(ServerTimeHandler.class.getSimpleName());
 
     private static final String time_string = "time";
     private static final String add_string = "add";
@@ -50,6 +51,7 @@ public final class ServerTimeHandler extends TimeHandler
     private boolean wasDaytime = true;
     private int dayMinutes = 0;
     private int nightMinutes = 0;
+    private long lastCustomtime = this.customtime;
 
     private ServerTimeHandler()
     {
@@ -88,7 +90,7 @@ public final class ServerTimeHandler extends TimeHandler
                         serverLevel.getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(true, serverLevel.getServer());
                     }
 
-                    this.customtime++;
+                    this.lastCustomtime = ++this.customtime;
 
                     Numbers.setWorldtime(serverLevel, this.customtime, this.multiplier);
                 }
@@ -105,18 +107,20 @@ public final class ServerTimeHandler extends TimeHandler
                     updateClientsTime();
                     ModNetworkDispatcher.send(new GamerulesS2CPacket(serverLevel), serverLevel.dimension());
 
-                    if (Config.debugMode.get())
+                    if (Config.debug.get())
                     {
                         long updatedWorldtime = serverLevel.getDayTime();
 
-                        log.debug(Numbers.progressString(updatedWorldtime, String.format(" Server time update: %s -> %s (%s -> %s) (day %s) | multiplier: %s",
+                        log.debug(
+                                "{} Server time update: {} -> {} ({} -> {}) (day {}) | multiplier: {}",
+                                Numbers.getProgressString(updatedWorldtime),
                                 worldtime,
                                 updatedWorldtime,
-                                this.customtime - 1,
+                                this.lastCustomtime,
                                 this.customtime,
-                                Numbers.day(updatedWorldtime),
+                                updatedWorldtime / Numbers.DAY_TICKS,
                                 this.multiplier
-                        )));
+                        );
                     }
                 }
             }
@@ -150,28 +154,28 @@ public final class ServerTimeHandler extends TimeHandler
 
     private void reset(long worldtime)
     {
-        update(Numbers.customtime(worldtime), Numbers.multiplier(worldtime));
+        update(Numbers.getCustomTime(worldtime), Numbers.getMultiplier(worldtime));
     }
 
     private void syncTimeWithSystem(ServerLevel level)
     {
-        Calendar calendar = Calendar.getInstance();
-
-        int hour = calendar.get(Calendar.HOUR_OF_DAY);
-        int minute = calendar.get(Calendar.MINUTE);
+        LocalTime now = LocalTime.now();
+        int minute = now.getMinute();
 
         if (minute != this.lastMinute)
         {
-            long worldtime = level.getDayTime();
-            long time = Numbers.systemtime(hour, minute, calendar.get(Calendar.DAY_OF_YEAR));
+            long worldTime = level.getDayTime();
+            int hour = now.getHour();
+            int day = LocalDate.now().getDayOfYear();
+            long time = Numbers.getSystemtimeTicks(hour, minute, day);
 
             this.lastMinute = minute;
 
             level.setDayTime(time);
 
-            if (Config.debugMode.get())
+            if (Config.debug.get())
             {
-                log.debug(String.format("System time update: %d -> %d | day %s, %s:%s", worldtime, time, calendar.get(Calendar.DAY_OF_YEAR), hour, minute));
+                log.debug("System time update: {} -> {} | day {}, {}", worldTime, time, day, String.format("%02d:%02d", hour, minute));
             }
         }
     }
@@ -256,7 +260,7 @@ public final class ServerTimeHandler extends TimeHandler
                     }
                 }
 
-                if (Config.debugMode.get())
+                if (Config.debug.get())
                 {
                     TimeControl.LOG.debug("Caught time command: /" + time_string + " " + action + " " + (time == null ? argument : time));
                 }
@@ -323,7 +327,7 @@ public final class ServerTimeHandler extends TimeHandler
 
     public static void update(long worldtime)
     {
-        instance.update(Numbers.customtime(worldtime), Numbers.multiplier(worldtime));
+        instance.update(Numbers.getCustomTime(worldtime), Numbers.getMultiplier(worldtime));
 
         instance.dayMinutes = Config.day_length_minutes.get();
         instance.nightMinutes = Config.night_length_minutes.get();

@@ -10,17 +10,18 @@ import net.minecraftforge.fml.event.config.ModConfigEvent;
 @Mod.EventBusSubscriber(modid = TimeControl.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class Config
 {
-    static ForgeConfigSpec COMMON_CONFIG;
-    //public static ForgeConfigSpec CLIENT_CONFIG; This will be needed for client-specific options
+    static ForgeConfigSpec SERVER_CONFIG;
+    static ForgeConfigSpec CLIENT_CONFIG;
 
-    private static final int SYNC_TO_SYSTEM_TIME_RATE_LIMIT = 864000;
+    public static final int SYNC_TO_SYSTEM_TIME_RATE_LIMIT = 864000;
     public static final int LENGTH_LIMIT = 178956;
 
     /* BEGIN ENTRIES */
-
     public static final String CATEGORY_MISC = "miscellaneous";
 
-    public static ForgeConfigSpec.BooleanValue debugMode;
+    public static final String DEBUG = "debug";
+    public static ForgeConfigSpec.BooleanValue debug;
+    public static ForgeConfigSpec.BooleanValue clientDebug;
 
     public static final String CATEGORY_SYSTEM = "system_time";
 
@@ -37,41 +38,53 @@ public class Config
 
     public static final String NIGHT_LENGTH_MINUTES = "night_length_minutes";
     public static ForgeConfigSpec.IntValue night_length_minutes;
-
     /* END ENTRIES */
 
     static
     {
-        ForgeConfigSpec.Builder commonConfig = new ForgeConfigSpec.Builder();
+        ForgeConfigSpec.Builder config = new ForgeConfigSpec.Builder();
 
         {
-            commonConfig.push(CATEGORY_SYSTEM);
-            sync_to_system_time = commonConfig.comment("Synchronize game world time with system time").define(SYNC_TO_SYSTEM_TIME, false);
-            sync_to_system_time_rate = commonConfig.comment("Sync time every n ticks").defineInRange(SYNC_TO_SYSTEM_TIME_RATE, 20, 1, SYNC_TO_SYSTEM_TIME_RATE_LIMIT);
-            commonConfig.pop();
+            config.push(CATEGORY_SYSTEM);
+            sync_to_system_time = config.comment("Synchronize game world time with system time").define(SYNC_TO_SYSTEM_TIME, false);
+            sync_to_system_time_rate = config.comment("Sync time every n ticks").defineInRange(SYNC_TO_SYSTEM_TIME_RATE, 20, 1, SYNC_TO_SYSTEM_TIME_RATE_LIMIT);
+            config.pop();
         }
 
         {
-            commonConfig.push(CATEGORY_ARBITRARY);
-            day_length_minutes = commonConfig.comment("How long daytime lasts (0 - " + Numbers.night_start + ")").defineInRange(DAY_LENGTH_MINUTES, 10, 1, LENGTH_LIMIT);
-            night_length_minutes = commonConfig.comment("How long nighttime lasts (" + Numbers.night_start + " - 24000)").defineInRange(NIGHT_LENGTH_MINUTES, 10, 1, LENGTH_LIMIT);
-            commonConfig.pop();
+            config.push(CATEGORY_ARBITRARY);
+            day_length_minutes = config.comment("How long daytime lasts (0 - " + Numbers.HALF_DAY_TICKS + ")").defineInRange(DAY_LENGTH_MINUTES, 10, 1, LENGTH_LIMIT);
+            night_length_minutes = config.comment("How long nighttime lasts (" + Numbers.HALF_DAY_TICKS + " - 24000)").defineInRange(NIGHT_LENGTH_MINUTES, 10, 1, LENGTH_LIMIT);
+            config.pop();
         }
 
         {
-            commonConfig.push(CATEGORY_MISC);
-            debugMode = commonConfig.define("debugMode", false);
-            commonConfig.pop();
+            config.push(CATEGORY_MISC);
+            debug = config.define(DEBUG, false);
+            config.pop();
         }
 
-        COMMON_CONFIG = commonConfig.build();
+        SERVER_CONFIG = config.build();
+
+        ForgeConfigSpec.Builder clientConfig = new ForgeConfigSpec.Builder();
+
+        clientDebug = clientConfig.define(DEBUG, false);
+
+        CLIENT_CONFIG = clientConfig.build();
     }
 
     private static void reload(ModConfig config, ModConfig.Type type)
     {
-        if (config.getModId().equals(TimeControl.MODID) && type == ModConfig.Type.COMMON)
+        if (config.getModId().equals(TimeControl.MODID))
         {
-            COMMON_CONFIG.setConfig(config.getConfigData());
+            if (type == ModConfig.Type.SERVER)
+            {
+                SERVER_CONFIG.setConfig(config.getConfigData());
+            }
+            else if (type == ModConfig.Type.CLIENT)
+            {
+                CLIENT_CONFIG.setConfig(config.getConfigData());
+            }
         }
     }
 

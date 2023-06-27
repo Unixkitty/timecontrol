@@ -2,6 +2,7 @@ package com.unixkitty.timecontrol.network;
 
 import com.unixkitty.timecontrol.TimeControl;
 import com.unixkitty.timecontrol.network.packet.BasePacket;
+import com.unixkitty.timecontrol.network.packet.ConfigS2CPacket;
 import com.unixkitty.timecontrol.network.packet.GamerulesS2CPacket;
 import com.unixkitty.timecontrol.network.packet.TimeS2CPacket;
 import net.minecraft.resources.ResourceKey;
@@ -26,6 +27,7 @@ public class ModNetworkDispatcher
 
         registerPacket(TimeS2CPacket.class);
         registerPacket(GamerulesS2CPacket.class);
+        registerPacket(ConfigS2CPacket.class);
     }
 
     private static <T extends BasePacket> void registerPacket(Class<T> packetClass)
@@ -55,5 +57,10 @@ public class ModNetworkDispatcher
     public static void send(BasePacket packet, ResourceKey<Level> dimension)
     {
         INSTANCE.send(PacketDistributor.DIMENSION.with(() -> dimension), packet);
+    }
+
+    public static void send(BasePacket packet)
+    {
+        INSTANCE.send(PacketDistributor.ALL.noArg(), packet);
     }
 }

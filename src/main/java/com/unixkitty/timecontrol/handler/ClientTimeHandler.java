@@ -4,6 +4,7 @@ import com.unixkitty.timecontrol.Config;
 import com.unixkitty.timecontrol.Numbers;
 import com.unixkitty.timecontrol.TimeControl;
 import com.unixkitty.timecontrol.network.packet.BasePacket;
+import com.unixkitty.timecontrol.network.packet.ConfigS2CPacket;
 import com.unixkitty.timecontrol.network.packet.GamerulesS2CPacket;
 import com.unixkitty.timecontrol.network.packet.TimeS2CPacket;
 import net.minecraft.client.Minecraft;
@@ -25,7 +26,7 @@ import javax.annotation.Nonnull;
 public final class ClientTimeHandler extends TimeHandler
 {
     private static final TimeHandler instance = new ClientTimeHandler();
-    private static final Logger log = LogManager.getLogger();
+    private static final Logger log = LogManager.getLogger(ClientTimeHandler.class.getSimpleName());
 
     private int debugLogDelay = 0;
 
@@ -58,6 +59,13 @@ public final class ClientTimeHandler extends TimeHandler
                 level.getGameRules().getRule(TimeControl.DO_DAYLIGHT_CYCLE_TC).set(message.modRuleValue, null);
             }
         }
+        else if (packet instanceof ConfigS2CPacket message)
+        {
+            Config.day_length_minutes.set(message.day_length_minutes);
+            Config.night_length_minutes.set(message.night_length_minutes);
+            Config.sync_to_system_time_rate.set(message.sync_to_system_time_rate);
+            Config.sync_to_system_time.set(message.sync_to_system_time);
+        }
     }
 
     @Override
@@ -67,10 +75,11 @@ public final class ClientTimeHandler extends TimeHandler
         if (!Config.sync_to_system_time.get() && level.dimension() == Level.OVERWORLD)
         {
             this.debugLogDelay = (this.debugLogDelay + 1) % 20;
+            boolean shouldLog = this.debugLogDelay == 0 && Config.clientDebug.get();
 
             if (this.multiplier == 0)
             {
-                if (this.debugLogDelay == 0 && Config.debugMode.get())
+                if (shouldLog)
                 {
                     log.debug("Waiting for server time packet...");
                 }
@@ -80,12 +89,10 @@ public final class ClientTimeHandler extends TimeHandler
 
             if (level.getGameRules().getBoolean(TimeControl.DO_DAYLIGHT_CYCLE_TC))
             {
-                this.customtime++;
-
-                Numbers.setWorldtime(level, this.customtime, this.multiplier);
+                Numbers.setWorldtime(level, ++this.customtime, this.multiplier);
             }
 
-            if (debugLogDelay == 0 && Config.debugMode.get())
+            if (shouldLog)
             {
                 long worldtime = level.getDayTime();
 
