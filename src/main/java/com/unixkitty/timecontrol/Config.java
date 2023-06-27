@@ -67,22 +67,25 @@ public class Config
         COMMON_CONFIG = commonConfig.build();
     }
 
-    private static void reload(ModConfig config)
+    private static void reload(ModConfig config, ModConfig.Type type)
     {
-        COMMON_CONFIG.setConfig(config.getConfigData());
+        if (config.getModId().equals(TimeControl.MODID) && type == ModConfig.Type.COMMON)
+        {
+            COMMON_CONFIG.setConfig(config.getConfigData());
+        }
     }
 
     @SuppressWarnings("unused")
     @SubscribeEvent
     public static void onLoad(final ModConfigEvent.Loading event)
     {
-        reload(event.getConfig());
+        reload(event.getConfig(), event.getConfig().getType());
     }
 
     @SuppressWarnings("unused")
     @SubscribeEvent
     public static void onFileChange(final ModConfigEvent.Reloading event)
     {
-        reload(event.getConfig());
+        reload(event.getConfig(), event.getConfig().getType());
     }
 }

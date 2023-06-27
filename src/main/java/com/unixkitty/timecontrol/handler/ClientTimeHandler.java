@@ -72,7 +72,7 @@ public final class ClientTimeHandler extends TimeHandler
             {
                 if (this.debugLogDelay == 0 && Config.debugMode.get())
                 {
-                    log.info("Waiting for server time packet...");
+                    log.debug("Waiting for server time packet...");
                 }
 
                 return;
@@ -89,12 +89,12 @@ public final class ClientTimeHandler extends TimeHandler
             {
                 long worldtime = level.getDayTime();
 
-                log.info(String.format("Client time: %s | multiplier: %s | gamerules: %s, %s",
+                log.debug("Client time: {} | multiplier: {} | gamerules: {}, {}",
                         worldtime,
                         this.multiplier,
                         level.getGameRules().getBoolean(GameRules.RULE_DAYLIGHT),
                         level.getGameRules().getBoolean(TimeControl.DO_DAYLIGHT_CYCLE_TC)
-                ));
+                );
             }
         }
     }
