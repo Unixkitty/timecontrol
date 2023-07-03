@@ -6,13 +6,13 @@ import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import com.unixkitty.timecontrol.config.Config;
+import com.unixkitty.timecontrol.config.json.JsonConfig;
 import com.unixkitty.timecontrol.network.ModNetworkDispatcher;
 import com.unixkitty.timecontrol.network.packet.ConfigS2CPacket;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
-
-import java.util.function.Supplier;
 
 public class TimeControlCommand
 {
@@ -23,45 +23,73 @@ public class TimeControlCommand
         LiteralArgumentBuilder<CommandSourceStack> command = Commands.literal(TimeControl.MODID)
                 .requires(source -> source.hasPermission(2));
 
-        registerCommand(Config.DAY_LENGTH_MINUTES, IntegerArgumentType.integer(1, Config.LENGTH_LIMIT), Config.day_length_minutes, command);
-        registerCommand(Config.NIGHT_LENGTH_MINUTES, IntegerArgumentType.integer(1, Config.LENGTH_LIMIT), Config.night_length_minutes, command);
-        registerCommand(Config.SYNC_TO_SYSTEM_TIME, BoolArgumentType.bool(), Config.sync_to_system_time, command);
-        registerCommand(Config.SYNC_TO_SYSTEM_TIME_RATE, IntegerArgumentType.integer(1, Config.SYNC_TO_SYSTEM_TIME_RATE_LIMIT), Config.sync_to_system_time_rate, command);
+        registerCommand(Config.day_length_minutes, command);
+        registerCommand(Config.night_length_minutes, command);
+        registerCommand(Config.sync_to_system_time, command);
+        registerCommand(Config.sync_to_system_time_rate, command);
 
         dispatcher.register(command);
     }
 
-    private static void registerCommand(String name, ArgumentType<?> argument, Supplier<?> configValueSupplier, LiteralArgumentBuilder<CommandSourceStack> command)
+    private static void registerCommand(JsonConfig.Value<?> configValue, LiteralArgumentBuilder<CommandSourceStack> command)
     {
-        command.then(Commands.literal(name)
-                .then(Commands.argument(value_string, argument)
-                        .executes(context -> setValue(context, name)))
-                .executes(context -> sendFeedback(context, name, configValueSupplier.get(), false)));
-    }
+        ArgumentType<?> argument = null;
 
-    private static int setValue(CommandContext<CommandSourceStack> context, String name)
-    {
-        Object value = Config.SYNC_TO_SYSTEM_TIME.equals(name) ? BoolArgumentType.getBool(context, value_string) : IntegerArgumentType.getInteger(context, value_string);
-
-        switch (name)
+        if (configValue.getValueClass().equals(Boolean.class))
         {
-            case Config.DAY_LENGTH_MINUTES -> Config.day_length_minutes.set((Integer) value);
-            case Config.NIGHT_LENGTH_MINUTES -> Config.night_length_minutes.set((Integer) value);
-            case Config.SYNC_TO_SYSTEM_TIME_RATE -> Config.sync_to_system_time_rate.set((Integer) value);
-            case Config.SYNC_TO_SYSTEM_TIME -> Config.sync_to_system_time.set((Boolean) value);
+            argument = BoolArgumentType.bool();
+        }
+        else if (configValue instanceof JsonConfig.NumberValue<?> numberValue && numberValue.getValueClass().equals(Integer.class))
+        {
+            argument = IntegerArgumentType.integer((int) numberValue.getMin(), (int) numberValue.getMax());
         }
 
-        //Manually sync config so that clients don't need to relogin
-        ModNetworkDispatcher.send(new ConfigS2CPacket());
+        if (argument != null)
+        {
+            command.then(Commands.literal(configValue.getName())
+                    .then(Commands.argument(value_string, argument)
+                            .executes(context -> setValue(context, configValue)))
+                    .executes(context -> sendFeedback(context, configValue, false)));
+        }
+    }
 
-        sendFeedback(context, name, value, true);
+    @SuppressWarnings("unchecked")
+    private static int setValue(CommandContext<CommandSourceStack> context, JsonConfig.Value<?> configValue)
+    {
+        boolean needSaving = true;
+
+        if (configValue.getValueClass().equals(Boolean.class))
+        {
+            boolean newValue = BoolArgumentType.getBool(context, value_string);
+
+            ((JsonConfig.Value<Boolean>) configValue).set(newValue);
+        }
+        else if (configValue.getValueClass().equals(Integer.class))
+        {
+            int newValue = IntegerArgumentType.getInteger(context, value_string);
+
+            ((JsonConfig.Value<Integer>) configValue).set(newValue);
+        }
+        else
+        {
+            needSaving = false;
+        }
+
+        if (needSaving)
+        {
+            Config.save();
+
+            ModNetworkDispatcher.send(context.getSource().getLevel(), new ConfigS2CPacket());
+
+            sendFeedback(context, configValue, true);
+        }
 
         return 0;
     }
 
-    private static int sendFeedback(final CommandContext<CommandSourceStack> context, final String valueName, final Object value, boolean allowLogging)
+    private static int sendFeedback(final CommandContext<CommandSourceStack> context, final JsonConfig.Value<?> configValue, boolean allowLogging)
     {
-        context.getSource().sendSuccess(() -> Component.literal(valueName + " = " + value), allowLogging);
+        context.getSource().sendSuccess(() -> Component.literal(configValue.getName() + " = " + configValue.get()), allowLogging);
 
         return 0;
     }

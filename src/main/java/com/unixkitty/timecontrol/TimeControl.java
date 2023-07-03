@@ -1,40 +1,27 @@
 package com.unixkitty.timecontrol;
 
-import com.unixkitty.timecontrol.network.ModNetworkDispatcher;
+import com.unixkitty.timecontrol.config.Config;
+import com.unixkitty.timecontrol.handler.ServerTimeHandler;
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.minecraft.world.level.GameRules;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@Mod(TimeControl.MODID)
-public class TimeControl
+public class TimeControl implements ModInitializer
 {
-    // The MODID value here should match an entry in the META-INF/mods.toml file
     public static final String MODID = "timecontrol";
 
-    public static final Logger LOG = LogManager.getLogger(TimeControl.class.getSimpleName());
+    public static final Logger LOG = LogManager.getLogger(TimeControl.class);
 
     public static GameRules.Key<GameRules.BooleanValue> DO_DAYLIGHT_CYCLE_TC = null;
 
-    public TimeControl()
+    @Override
+    public void onInitialize()
     {
-        ModLoadingContext modLoadingContext = ModLoadingContext.get();
-
-        modLoadingContext.registerConfig(ModConfig.Type.SERVER, Config.SERVER_CONFIG);
-        modLoadingContext.registerConfig(ModConfig.Type.CLIENT, Config.CLIENT_CONFIG);
-
-        FMLJavaModLoadingContext.get().getModEventBus().addListener(TimeControl::onCommonSetup);
-    }
-
-    public static void onCommonSetup(final FMLCommonSetupEvent event)
-    {
-        event.enqueueWork(ModNetworkDispatcher::register);
+        Config.load();
 
         if (DO_DAYLIGHT_CYCLE_TC == null)
         {
@@ -43,11 +30,11 @@ public class TimeControl
             LOG.info("Registered custom gamerule");
         }
 
-        MinecraftForge.EVENT_BUS.addListener(TimeControl::onRegisterCommands);
-    }
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> TimeControlCommand.register(dispatcher));
 
-    public static void onRegisterCommands(final RegisterCommandsEvent event)
-    {
-        TimeControlCommand.register(event.getDispatcher());
+        ServerWorldEvents.LOAD.register(new ServerTimeHandler.WorldLoad());
+        ServerTickEvents.START_WORLD_TICK.register(new ServerTimeHandler.WorldTick());
+
+//        Config.setClient();
     }
 }

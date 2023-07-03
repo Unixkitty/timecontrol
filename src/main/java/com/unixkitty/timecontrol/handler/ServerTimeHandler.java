@@ -2,43 +2,41 @@ package com.unixkitty.timecontrol.handler;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
-import com.unixkitty.timecontrol.Config;
 import com.unixkitty.timecontrol.Numbers;
 import com.unixkitty.timecontrol.TimeControl;
+import com.unixkitty.timecontrol.config.Config;
+import com.unixkitty.timecontrol.event.CommandEvent;
+import com.unixkitty.timecontrol.event.SleepFinishedTimeEvent;
 import com.unixkitty.timecontrol.network.ModNetworkDispatcher;
 import com.unixkitty.timecontrol.network.packet.GamerulesS2CPacket;
 import com.unixkitty.timecontrol.network.packet.TimeS2CPacket;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.commands.CommandRuntimeException;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.event.CommandEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.event.level.SleepFinishedTimeEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.LogicalSide;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nonnull;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Objects;
 
 import static net.minecraft.world.level.GameRules.RULE_DAYLIGHT;
 
-@Mod.EventBusSubscriber(modid = TimeControl.MODID)
 public final class ServerTimeHandler extends TimeHandler
 {
     private static final ServerTimeHandler instance = new ServerTimeHandler();
-    private static final Logger log = LogManager.getLogger(ServerTimeHandler.class.getSimpleName());
+    private static final Logger log = LogManager.getLogger(ServerTimeHandler.class);
 
     private static final String time_string = "time";
     private static final String add_string = "add";
@@ -58,7 +56,7 @@ public final class ServerTimeHandler extends TimeHandler
     }
 
     @Override
-    public void tick(@Nonnull Level level)
+    public void tick(@NotNull Level level)
     {
         if (level instanceof ServerLevel serverLevel)
         {
@@ -77,14 +75,13 @@ public final class ServerTimeHandler extends TimeHandler
 
                 if (isDaytime != this.wasDaytime)
                 {
-                    reset(worldtime);
+                    reset(serverLevel, worldtime);
 
                     this.wasDaytime = isDaytime;
                 }
 
                 if (serverLevel.getGameRules().getBoolean(TimeControl.DO_DAYLIGHT_CYCLE_TC))
                 {
-                    //TODO what about Quark's "Improved Sleeping"?
                     if (areAllPlayersAsleep(serverLevel))
                     {
                         serverLevel.getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(true, serverLevel.getServer());
@@ -100,12 +97,12 @@ public final class ServerTimeHandler extends TimeHandler
                     //Detect config changes
                     if (this.dayMinutes != Config.day_length_minutes.get() || this.nightMinutes != Config.night_length_minutes.get())
                     {
-                        ServerTimeHandler.update(serverLevel.getDayTime());
+                        ServerTimeHandler.update(serverLevel, serverLevel.getDayTime());
                     }
 
                     //This is to keep client multipliers in sync
-                    updateClientsTime();
-                    ModNetworkDispatcher.send(new GamerulesS2CPacket(serverLevel), serverLevel.dimension());
+                    updateClientsTime(serverLevel);
+                    ModNetworkDispatcher.send(serverLevel, new GamerulesS2CPacket(serverLevel));
 
                     if (Config.debug.get())
                     {
@@ -128,11 +125,14 @@ public final class ServerTimeHandler extends TimeHandler
     }
 
     @Override
-    public void update(long customtime, double multiplier)
+    public void update(@Nullable Level level, long customtime, double multiplier)
     {
-        super.update(customtime, multiplier);
+        super.update(level, customtime, multiplier);
 
-        updateClientsTime();
+        if (level instanceof ServerLevel serverLevel)
+        {
+            updateClientsTime(serverLevel);
+        }
     }
 
     private double getMultiplier()
@@ -152,9 +152,9 @@ public final class ServerTimeHandler extends TimeHandler
         return level.sleepStatus.areEnoughSleeping(l) && level.sleepStatus.areEnoughDeepSleeping(l, level.players());
     }
 
-    private void reset(long worldtime)
+    private void reset(ServerLevel level, long worldtime)
     {
-        update(Numbers.getCustomTime(worldtime), Numbers.getMultiplier(worldtime));
+        update(level, Numbers.getCustomTime(worldtime), Numbers.getMultiplier(worldtime));
     }
 
     private void syncTimeWithSystem(ServerLevel level)
@@ -180,40 +180,40 @@ public final class ServerTimeHandler extends TimeHandler
         }
     }
 
-    private void updateClientsTime()
+    private void updateClientsTime(ServerLevel level)
     {
-        ModNetworkDispatcher.send(new TimeS2CPacket(this.customtime, this.multiplier), Level.OVERWORLD);
+        ModNetworkDispatcher.send(level, new TimeS2CPacket(this.customtime, this.multiplier));
     }
 
-    //TODO implement custom time multipliers for dimensions other than the Overoworld using world.getDimensionType().doesFixedTimeExist()
-    @SubscribeEvent
-    public static void onWorldLoad(final LevelEvent.Load event)
+    public static class WorldLoad implements ServerWorldEvents.Load
     {
-        if (TimeControl.DO_DAYLIGHT_CYCLE_TC != null && event.getLevel() instanceof ServerLevel level && level.dimension() == Level.OVERWORLD)
+        @Override
+        public void onWorldLoad(MinecraftServer server, ServerLevel level)
         {
-            level.getGameRules().getRule(RULE_DAYLIGHT).set(false, level.getServer());
-
-            if (!Config.sync_to_system_time.get())
+            if (TimeControl.DO_DAYLIGHT_CYCLE_TC != null && level.dimension() == Level.OVERWORLD)
             {
-                update(level.getDayTime());
+                level.getGameRules().getRule(RULE_DAYLIGHT).set(false, level.getServer());
+
+                if (!Config.sync_to_system_time.get())
+                {
+                    update(level, level.getDayTime());
+                }
             }
         }
     }
 
-    @SubscribeEvent
-    public static void onWorldTick(final TickEvent.LevelTickEvent event)
+    public static class WorldTick implements ServerTickEvents.StartWorldTick
     {
-        if (
-                event.side == LogicalSide.SERVER
-                        && event.phase == TickEvent.Phase.START
-                        && event.level.dimension() == Level.OVERWORLD
-        )
+        @Override
+        public void onStartTick(ServerLevel level)
         {
-            instance.tick(event.level);
+            if (level.dimension() == Level.OVERWORLD)
+            {
+                instance.tick(level);
+            }
         }
     }
 
-    @SubscribeEvent
     public static void onCommand(final CommandEvent event)
     {
         final CommandSourceStack sender = event.getParseResults().getContext().getSource();
@@ -231,7 +231,7 @@ public final class ServerTimeHandler extends TimeHandler
 
                 if (Config.sync_to_system_time.get())
                 {
-                    sender.sendFailure(new CommandRuntimeException(Component.translatable("text.timecontrol.change_time_when_system", action, time_string)).getComponent());
+                    event.setException(new CommandRuntimeException(Component.translatable("text.timecontrol.change_time_when_system", action, time_string)));
                     event.setCanceled(true);
 
                     return;
@@ -267,7 +267,7 @@ public final class ServerTimeHandler extends TimeHandler
 
                 if (time != null)
                 {
-                    update(action.equals(set_string) ? time : level.getDayTime() + time);
+                    update(level, action.equals(set_string) ? time : level.getDayTime() + time);
 
                     Numbers.setWorldtime(level, instance.getCustomtime(), instance.getMultiplier());
 
@@ -278,56 +278,59 @@ public final class ServerTimeHandler extends TimeHandler
         }
     }
 
-    @SubscribeEvent
     public static void onSleepFinished(final SleepFinishedTimeEvent event)
     {
-        if (event.getLevel() instanceof ServerLevel level)
+        ServerLevel level = event.getLevel();
+
+        //Adapted from mod Comforts for it's hammocks
+        if (FabricLoader.getInstance().isModLoaded("comforts"))
         {
-            //Adapted from mod Comforts for it's hammocks
-            if (ModList.get().isLoaded("comforts"))
+            final boolean[] activeHammock = {true};
+
+            for (Player player : event.getLevel().players())
             {
-                final boolean[] activeHammock = {true};
-
-                for (Player player : event.getLevel().players())
-                {
-                    player.getSleepingPos().ifPresent(bedPos -> {
-                        if (player.isSleepingLongEnough())
-                        {
-                            if (!Objects.requireNonNull(ForgeRegistries.BLOCKS.getKey(level.getBlockState(bedPos).getBlock())).toString().startsWith("comforts:hammock_"))
-                            {
-                                activeHammock[0] = false;
-                            }
-                        }
-                    });
-
-                    if (!activeHammock[0])
+                player.getSleepingPos().ifPresent(bedPos -> {
+                    if (player.isSleepingLongEnough())
                     {
-                        break;
+                        if (!Objects.requireNonNull(BuiltInRegistries.BLOCK.getKey(level.getBlockState(bedPos).getBlock())).toString().startsWith("comforts:hammock_"))
+                        {
+                            activeHammock[0] = false;
+                        }
                     }
-                }
+                });
 
-                if (activeHammock[0] && level.isDay())
+                if (!activeHammock[0])
                 {
-                    final long t = ((level.getDayTime() + 24000L) - (level.getDayTime() + 24000L) % 24000L) - 12001L;
-
-                    event.setTimeAddition(t);
-
-                    //nothing works without this line
-                    update(t);
+                    break;
                 }
             }
 
-            //We reset the rule back after letting vanilla handle wakey-wakey
-            if (level.getGameRules().getBoolean(TimeControl.DO_DAYLIGHT_CYCLE_TC))
+            if (activeHammock[0] && level.isDay())
             {
-                level.getGameRules().getRule(RULE_DAYLIGHT).set(false, level.getServer());
+                final long t = ((level.getDayTime() + 24000L) - (level.getDayTime() + 24000L) % 24000L) - 12001L;
+
+                if (event.setTimeAddition(t))
+                {
+                    //nothing works without this line
+                    update(level, t);
+                }
+                else
+                {
+                    TimeControl.LOG.warn("Somehow tried to daysleep on a hammock backwards in time?");
+                }
             }
+        }
+
+        //We reset the rule back after letting vanilla handle wakey-wakey
+        if (level.getGameRules().getBoolean(TimeControl.DO_DAYLIGHT_CYCLE_TC))
+        {
+            level.getGameRules().getRule(RULE_DAYLIGHT).set(false, level.getServer());
         }
     }
 
-    public static void update(long worldtime)
+    public static void update(@NotNull ServerLevel level, long worldtime)
     {
-        instance.update(Numbers.getCustomTime(worldtime), Numbers.getMultiplier(worldtime));
+        instance.update(level, Numbers.getCustomTime(worldtime), Numbers.getMultiplier(worldtime));
 
         instance.dayMinutes = Config.day_length_minutes.get();
         instance.nightMinutes = Config.night_length_minutes.get();

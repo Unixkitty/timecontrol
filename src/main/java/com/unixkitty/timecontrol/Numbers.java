@@ -1,5 +1,6 @@
 package com.unixkitty.timecontrol;
 
+import com.unixkitty.timecontrol.config.Config;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.LevelData;

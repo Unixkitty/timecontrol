@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "com.unixkitty.timecontrol.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "CommandsMixin",
+    "ServerLevelMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

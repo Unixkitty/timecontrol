@@ -1,10 +1,6 @@
 package com.unixkitty.timecontrol.network.packet;
 
-import com.unixkitty.timecontrol.handler.ClientTimeHandler;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
-
-import java.util.function.Supplier;
 
 public class TimeS2CPacket extends BasePacket
 {
@@ -24,21 +20,11 @@ public class TimeS2CPacket extends BasePacket
     }
 
     @Override
-    public void toBytes(FriendlyByteBuf buffer)
+    public FriendlyByteBuf toBytes(FriendlyByteBuf buffer)
     {
         buffer.writeLong(this.customtime);
         buffer.writeDouble(this.multiplier);
-    }
 
-    @Override
-    public boolean handle(Supplier<NetworkEvent.Context> contextSupplier)
-    {
-        NetworkEvent.Context context = contextSupplier.get();
-
-        context.enqueueWork(() -> ClientTimeHandler.handlePacket(this));
-
-        context.setPacketHandled(true);
-
-        return true;
+        return buffer;
     }
 }

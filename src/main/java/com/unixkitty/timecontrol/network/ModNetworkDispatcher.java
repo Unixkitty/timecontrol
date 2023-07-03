@@ -5,62 +5,62 @@ import com.unixkitty.timecontrol.network.packet.BasePacket;
 import com.unixkitty.timecontrol.network.packet.ConfigS2CPacket;
 import com.unixkitty.timecontrol.network.packet.GamerulesS2CPacket;
 import com.unixkitty.timecontrol.network.packet.TimeS2CPacket;
-import net.minecraft.resources.ResourceKey;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkDirection;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.network.simple.SimpleChannel;
-
+import net.minecraft.server.level.ServerLevel;
+import org.jetbrains.annotations.NotNull;
 
 public class ModNetworkDispatcher
 {
-    public static final String PROTOCOL_VERSION = Integer.toString(2);
+    public static final Object2ObjectOpenHashMap<Class<? extends BasePacket>, PacketDesignation> REGISTRY = new Object2ObjectOpenHashMap<>();
 
-    private static SimpleChannel INSTANCE;
     private static int packetId = 0;
 
-    public static void register()
+    static
     {
-        INSTANCE = NetworkRegistry.newSimpleChannel(new ResourceLocation(TimeControl.MODID, "messages"), () -> PROTOCOL_VERSION, ModNetworkDispatcher::shouldAcceptPacket, ModNetworkDispatcher::shouldAcceptPacket);
-
         registerPacket(TimeS2CPacket.class);
         registerPacket(GamerulesS2CPacket.class);
         registerPacket(ConfigS2CPacket.class);
     }
 
-    private static <T extends BasePacket> void registerPacket(Class<T> packetClass)
+    private static void registerPacket(Class<? extends BasePacket> packetClass)
     {
-        INSTANCE.messageBuilder(packetClass, packetId++, NetworkDirection.PLAY_TO_CLIENT)
-                .decoder(buf ->
-                {
-                    try
-                    {
-                        return packetClass.getDeclaredConstructor(buf.getClass()).newInstance(buf);
-                    }
-                    catch (Exception e)
-                    {
-                        throw new RuntimeException("Failed to decode packet " + packetClass.getSimpleName(), e);
-                    }
-                })
-                .encoder(BasePacket::toBytes)
-                .consumerMainThread(BasePacket::handle)
-                .add();
+        REGISTRY.put(packetClass, new PacketDesignation(id(), true));
     }
 
-    private static boolean shouldAcceptPacket(String protocolVersion)
+    private static int id()
     {
-        return PROTOCOL_VERSION.equals(protocolVersion);
+        return packetId++;
     }
 
-    public static void send(BasePacket packet, ResourceKey<Level> dimension)
+    //TODO test if players in other dimensions also receive the packet
+    public static void send(@NotNull ServerLevel level, @NotNull BasePacket packet)
     {
-        INSTANCE.send(PacketDistributor.DIMENSION.with(() -> dimension), packet);
+        level.players().forEach(player ->
+                ServerPlayNetworking.send(player, REGISTRY.get(packet.getClass()).getId(), packet.toBytes(PacketByteBufs.create())));
     }
 
-    public static void send(BasePacket packet)
+    public static class PacketDesignation
     {
-        INSTANCE.send(PacketDistributor.ALL.noArg(), packet);
+        private final ResourceLocation id;
+        private final boolean clientBound;
+
+        private PacketDesignation(int id, boolean clientBound)
+        {
+            this.id = new ResourceLocation(TimeControl.MODID, "messages_" + id);
+            this.clientBound = clientBound;
+        }
+
+        public ResourceLocation getId()
+        {
+            return this.id;
+        }
+
+        public boolean isClientBound()
+        {
+            return this.clientBound;
+        }
     }
 }
