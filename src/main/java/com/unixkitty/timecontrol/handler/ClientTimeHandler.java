@@ -97,7 +97,7 @@ public final class ClientTimeHandler extends TimeHandler
         @Override
         public void onStartTick(Minecraft client)
         {
-            if (client.level != null)
+            if (client.level != null && !client.isPaused())
             {
                 instance.tick(client.level);
             }

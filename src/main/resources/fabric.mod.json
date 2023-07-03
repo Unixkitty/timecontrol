@@ -1,7 +1,7 @@
 {
 	"schemaVersion": 1,
 	"id": "timecontrol",
-	"version": "1.4.0",
+	"version": "${version}",
 	"name": "TimeControl",
 	"description": "Take control over Minecraft's day-night cycle",
 	"authors": [
