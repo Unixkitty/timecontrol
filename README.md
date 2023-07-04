@@ -1,6 +1,8 @@
-[![](http://cf.way2muchnoise.eu/title/303570.svg)](https://www.curseforge.com/minecraft/mc-mods/time-control) ![](http://cf.way2muchnoise.eu/versions/303570.svg)
+![](http://cf.way2muchnoise.eu/versions/303570.svg)
 
-Also on [![](https://static.unixkitty.com/icons/modrinth_long_small.png)](https://modrinth.com/mod/time-control)
+[![](http://cf.way2muchnoise.eu/title/303570.svg)](https://www.curseforge.com/minecraft/mc-mods/time-control)
+[![](https://static.unixkitty.com/icons/modrinth_long_color_24.svg)](https://modrinth.com/mod/time-control)
+[![](https://static.unixkitty.com/icons/discord_long_color_24.svg)](https://discord.unixkitty.com)
 
 # Timecontrol
 
@@ -82,7 +84,7 @@ Up to 1.19.4:
 /timecontrol set < night_length_minutes | day_length_minutes > <value>
 ```
 
-___
+---
 
 At this time it works with both multiplayer and singleplayer (must be installed on both), but on Dedicated Servers due to possible ping and ticks per second discrepancies slight skybox jitter may be noticeable.
 
@@ -99,8 +101,6 @@ At this time it works with both multiplayer and singleplayer (must be installed 
 **Q**: Can I add your mod to a modpack?
 
 **A**: CurseForge/Modrinth modpacks are cool.
-
-If anyone wants an easier way to chat or ask questions here's a Discord link: https://discord.gg/sKwS3c62uM
 
 #### P.S.
 
