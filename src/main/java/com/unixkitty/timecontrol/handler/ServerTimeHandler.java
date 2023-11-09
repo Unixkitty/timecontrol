@@ -165,7 +165,7 @@ public final class ServerTimeHandler extends TimeHandler
         if (minute != this.lastMinute)
         {
             long worldTime = level.getDayTime();
-            int hour = now.getHour();
+            int hour = now.getHour() + Config.sync_to_system_time_offset.get();
             int day = LocalDate.now().getDayOfYear();
             long time = Numbers.getSystemtimeTicks(hour, minute, day);
 

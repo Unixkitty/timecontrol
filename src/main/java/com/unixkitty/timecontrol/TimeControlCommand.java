@@ -27,6 +27,7 @@ public class TimeControlCommand
         registerCommand(Config.night_length_minutes, command);
         registerCommand(Config.sync_to_system_time, command);
         registerCommand(Config.sync_to_system_time_rate, command);
+        registerCommand(Config.sync_to_system_time_offset, command);
 
         dispatcher.register(command);
     }

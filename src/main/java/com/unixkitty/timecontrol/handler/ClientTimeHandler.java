@@ -86,6 +86,7 @@ public final class ClientTimeHandler extends TimeHandler
             Config.day_length_minutes.set(message.day_length_minutes);
             Config.night_length_minutes.set(message.night_length_minutes);
             Config.sync_to_system_time_rate.set(message.sync_to_system_time_rate);
+            Config.sync_to_system_time_offset.set(message.sync_to_system_time_offset);
             Config.sync_to_system_time.set(message.sync_to_system_time);
 
             Config.save();
