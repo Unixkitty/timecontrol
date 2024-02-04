@@ -27,8 +27,6 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.Objects;
 
 import static net.minecraft.world.level.GameRules.RULE_DAYLIGHT;
@@ -42,13 +40,7 @@ public final class ServerTimeHandler extends TimeHandler
     private static final String add_string = "add";
     private static final String set_string = "set";
 
-    /* System time */
-    private int lastMinute = 0;
-
     /* Arbitrary time */
-    private boolean wasDaytime = true;
-    private int dayMinutes = 0;
-    private int nightMinutes = 0;
     private long lastCustomtime = this.customtime;
 
     private ServerTimeHandler()
@@ -97,7 +89,7 @@ public final class ServerTimeHandler extends TimeHandler
                     //Detect config changes
                     if (this.dayMinutes != Config.day_length_minutes.get() || this.nightMinutes != Config.night_length_minutes.get())
                     {
-                        ServerTimeHandler.update(serverLevel, serverLevel.getDayTime());
+                        TimeHandler.update(instance, serverLevel, serverLevel.getDayTime());
                     }
 
                     //This is to keep client multipliers in sync
@@ -157,29 +149,6 @@ public final class ServerTimeHandler extends TimeHandler
         update(level, Numbers.getCustomTime(worldtime), Numbers.getMultiplier(worldtime));
     }
 
-    private void syncTimeWithSystem(ServerLevel level)
-    {
-        LocalTime now = LocalTime.now();
-        int minute = now.getMinute();
-
-        if (minute != this.lastMinute)
-        {
-            long worldTime = level.getDayTime();
-            int hour = now.getHour();
-            int day = LocalDate.now().getDayOfYear();
-            long time = Numbers.getSystemtimeTicks(hour, minute, day);
-
-            this.lastMinute = minute;
-
-            level.setDayTime(time);
-
-            if (Config.debug.get())
-            {
-                log.debug("System time update: {} -> {} | day {}, {}", worldTime, time, day, String.format("%02d:%02d", hour, minute));
-            }
-        }
-    }
-
     private void updateClientsTime(ServerLevel level)
     {
         ModNetworkDispatcher.send(level, new TimeS2CPacket(this.customtime, this.multiplier));
@@ -196,7 +165,7 @@ public final class ServerTimeHandler extends TimeHandler
 
                 if (!Config.sync_to_system_time.get())
                 {
-                    update(level, level.getDayTime());
+                    update(instance, level, level.getDayTime());
                 }
             }
         }
@@ -231,7 +200,7 @@ public final class ServerTimeHandler extends TimeHandler
 
                 if (Config.sync_to_system_time.get())
                 {
-                    event.setException(new CommandRuntimeException(Component.translatable("text.timecontrol.change_time_when_system", action, time_string)));
+                    event.setException(new CommandRuntimeException(Component.translatable("commands.timecontrol.change_time_when_system", action, time_string)));
                     event.setCanceled(true);
 
                     return;
@@ -267,7 +236,7 @@ public final class ServerTimeHandler extends TimeHandler
 
                 if (time != null)
                 {
-                    update(level, action.equals(set_string) ? time : level.getDayTime() + time);
+                    update(instance, level, action.equals(set_string) ? time : level.getDayTime() + time);
 
                     Numbers.setWorldtime(level, instance.getCustomtime(), instance.getMultiplier());
 
@@ -312,7 +281,7 @@ public final class ServerTimeHandler extends TimeHandler
                 if (event.setTimeAddition(t))
                 {
                     //nothing works without this line
-                    update(level, t);
+                    update(instance, level, t);
                 }
                 else
                 {
@@ -326,13 +295,5 @@ public final class ServerTimeHandler extends TimeHandler
         {
             level.getGameRules().getRule(RULE_DAYLIGHT).set(false, level.getServer());
         }
-    }
-
-    public static void update(@NotNull ServerLevel level, long worldtime)
-    {
-        instance.update(level, Numbers.getCustomTime(worldtime), Numbers.getMultiplier(worldtime));
-
-        instance.dayMinutes = Config.day_length_minutes.get();
-        instance.nightMinutes = Config.night_length_minutes.get();
     }
 }

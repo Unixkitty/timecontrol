@@ -12,6 +12,7 @@ public class Config
     /* BEGIN ENTRIES */
     public static JsonConfig.BooleanValue debug;
 
+    public static JsonConfig.BooleanValue ignore_server;
     public static JsonConfig.BooleanValue sync_to_system_time;
     public static JsonConfig.IntValue sync_to_system_time_rate;
 
@@ -25,6 +26,7 @@ public class Config
         {
             CONFIG = new JsonConfig(TimeControl.MODID);
 
+            ignore_server = CONFIG.defineValue("ignore_server", false);
             sync_to_system_time = CONFIG.defineValue("sync_to_system_time", false);
             sync_to_system_time_rate = CONFIG.defineInRange("sync_to_system_time_rate", 20, 1, 864000);
 

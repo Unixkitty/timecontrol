@@ -32,43 +32,86 @@ public final class ClientTimeHandler extends TimeHandler
     @Override
     public void tick(@NotNull Level level)
     {
-        //In system time synchronization mode we simply depend on server time packets
-        if (!Config.sync_to_system_time.get() && level.dimension() == Level.OVERWORLD)
+        if (level.dimension() == Level.OVERWORLD)
         {
-            this.debugLogDelay = (this.debugLogDelay + 1) % 20;
-            boolean shouldLog = this.debugLogDelay == 0 && Config.debug.get();
-
-            if (this.multiplier == 0)
+            //In system time synchronization mode we simply depend on server time packets
+            if (Config.sync_to_system_time.get())
             {
-                if (shouldLog)
+                //If we're ignoring server on client, have to get our own system time
+                if (Config.ignore_server.get() && Minecraft.getInstance().player != null && Minecraft.getInstance().player.tickCount % Config.sync_to_system_time_rate.get() == 0)
                 {
-                    log.debug("Waiting for server time packet...");
+                    syncTimeWithSystem(level);
+                }
+            }
+            else
+            {
+                this.debugLogDelay = (this.debugLogDelay + 1) % 20;
+                boolean shouldLog = this.debugLogDelay == 0 && Config.debug.get();
+
+                if (this.multiplier == 0)
+                {
+                    if (Config.ignore_server.get())
+                    {
+                        this.multiplier = Numbers.getMultiplier(level.getDayTime());
+                    }
+                    else
+                    {
+                        if (shouldLog)
+                        {
+                            log.debug("Waiting for server time packet...");
+                        }
+
+                        return;
+                    }
                 }
 
-                return;
-            }
+                if (level.getGameRules().getBoolean(TimeControl.DO_DAYLIGHT_CYCLE_TC))
+                {
+                    if (Config.ignore_server.get())
+                    {
+                        long worldtime = level.getDayTime();
 
-            if (level.getGameRules().getBoolean(TimeControl.DO_DAYLIGHT_CYCLE_TC))
-            {
-                Numbers.setWorldtime(level, ++this.customtime, this.multiplier);
-            }
+                        boolean isDaytime = Numbers.isDaytime(worldtime);
 
-            if (shouldLog)
-            {
-                long worldtime = level.getDayTime();
+                        if (isDaytime != this.wasDaytime)
+                        {
+                            update(level, Numbers.getCustomTime(worldtime), Numbers.getMultiplier(worldtime));
 
-                log.debug("Client time: {} | multiplier: {} | gamerules: {}, {}",
-                        worldtime,
-                        this.multiplier,
-                        level.getGameRules().getBoolean(GameRules.RULE_DAYLIGHT),
-                        level.getGameRules().getBoolean(TimeControl.DO_DAYLIGHT_CYCLE_TC)
-                );
+                            this.wasDaytime = isDaytime;
+                        }
+                    }
+
+                    Numbers.setWorldtime(level, ++this.customtime, this.multiplier);
+
+                    //Detect config changes
+                    if (this.dayMinutes != Config.day_length_minutes.get() || this.nightMinutes != Config.night_length_minutes.get())
+                    {
+                        ServerTimeHandler.update(instance, level, level.getDayTime());
+                    }
+                }
+
+                if (shouldLog)
+                {
+                    long worldtime = level.getDayTime();
+
+                    log.debug("Client time: {} | multiplier: {} | gamerules: {}, {}",
+                            worldtime,
+                            this.multiplier,
+                            level.getGameRules().getBoolean(GameRules.RULE_DAYLIGHT),
+                            level.getGameRules().getBoolean(TimeControl.DO_DAYLIGHT_CYCLE_TC)
+                    );
+                }
             }
         }
     }
 
     public static void handlePacket(BasePacket packet, Minecraft client)
     {
+        if (Config.ignore_server.get())
+        {
+            return;
+        }
+
         if (packet instanceof TimeS2CPacket message)
         {
             instance.update(null, message.customtime, message.multiplier);

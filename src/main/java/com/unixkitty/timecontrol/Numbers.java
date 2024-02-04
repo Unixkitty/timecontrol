@@ -22,6 +22,8 @@ public class Numbers
     private static final int real_life_minute_is_ticks = 1200; //60 seconds * 20 ticks
     private static final double vanilla_multiplier = HALF_DAY_TICKS / (double) real_life_minute_is_ticks;
 
+    private static int lastMinute = 0;
+
     public static double getMultiplier(long worldtime)
     {
         return getMultiplier(isDaytime(worldtime));
@@ -34,8 +36,12 @@ public class Numbers
 
     public static void setWorldtime(Level level, long customtime, double multiplier)
     {
+        setLevelDataWorldtime(level, getWorldtime(customtime, multiplier));
+    }
+
+    public static void setLevelDataWorldtime(Level level, long worldtime)
+    {
         LevelData worldInfo = level.getLevelData();
-        long worldtime = getWorldtime(customtime, multiplier);
 
         if (level.isClientSide && worldInfo instanceof ClientLevel.ClientLevelData)
         {

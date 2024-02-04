@@ -16,7 +16,7 @@ import net.minecraft.network.chat.Component;
 
 public class TimeControlCommand
 {
-    private static final String value_string = "value";
+    static final String value_string = "value";
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher)
     {
@@ -89,7 +89,7 @@ public class TimeControlCommand
 
     private static int sendFeedback(final CommandContext<CommandSourceStack> context, final JsonConfig.Value<?> configValue, boolean allowLogging)
     {
-        context.getSource().sendSuccess(() -> Component.literal(configValue.getName() + " = " + configValue.get()), allowLogging);
+        context.getSource().sendSuccess(() -> Component.translatable("commands.timecontrol." + (allowLogging ? "set" : "query"), configValue.getName(), configValue.get()), allowLogging);
 
         return 0;
     }
