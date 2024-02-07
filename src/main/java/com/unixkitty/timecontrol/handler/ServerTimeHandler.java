@@ -2,6 +2,7 @@ package com.unixkitty.timecontrol.handler;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.unixkitty.timecontrol.Numbers;
 import com.unixkitty.timecontrol.TimeControl;
 import com.unixkitty.timecontrol.config.Config;
@@ -13,7 +14,6 @@ import com.unixkitty.timecontrol.network.packet.TimeS2CPacket;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.commands.CommandRuntimeException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -200,7 +200,7 @@ public final class ServerTimeHandler extends TimeHandler
 
                 if (Config.sync_to_system_time.get())
                 {
-                    event.setException(new CommandRuntimeException(Component.translatable("commands.timecontrol.change_time_when_system", action, time_string)));
+                    event.setException(new SimpleCommandExceptionType(Component.translatable("commands.timecontrol.change_time_when_system", action, time_string)).create());
                     event.setCanceled(true);
 
                     return;

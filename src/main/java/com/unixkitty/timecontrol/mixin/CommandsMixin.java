@@ -2,24 +2,38 @@ package com.unixkitty.timecontrol.mixin;
 
 import com.mojang.brigadier.ParseResults;
 import com.unixkitty.timecontrol.event.CommandEvent;
+import net.minecraft.Util;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+import org.slf4j.Logger;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(Commands.class)
 public class CommandsMixin
 {
-    @Inject(method = "performCommand(Lcom/mojang/brigadier/ParseResults;Ljava/lang/String;)I", at = @At(value = "INVOKE", target = "Lcom/mojang/brigadier/CommandDispatcher;execute(Lcom/mojang/brigadier/ParseResults;)I"), cancellable = true)
-    public void onCommand(ParseResults<CommandSourceStack> parseResults, String command, CallbackInfoReturnable<Integer> cir) throws Exception
-    {
-        int result = CommandEvent.onCommand(parseResults);
+    @Shadow
+    @Final
+    private static Logger LOGGER;
 
-        if (result != 0)
+    @Inject(method = "performCommand(Lcom/mojang/brigadier/ParseResults;Ljava/lang/String;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/profiling/ProfilerFiller;push(Ljava/util/function/Supplier;)V"), cancellable = true, locals = LocalCapture.CAPTURE_FAILHARD)
+    public void onCommand(ParseResults<CommandSourceStack> parseResults, String string, CallbackInfo ci, CommandSourceStack commandSourceStack)
+    {
+        try
         {
-            cir.setReturnValue(result);
+            CommandEvent.onCommand(parseResults);
+        }
+        catch (Exception e)
+        {
+            commandSourceStack.sendFailure(Component.literal(Util.describeError(e)));
+            LOGGER.error("'/{}' threw an exception", string, e);
+            ci.cancel();
         }
     }
 }
