@@ -84,7 +84,7 @@ public final class ClientTimeHandler extends TimeHandler
                     Numbers.setWorldtime(level, ++this.customtime, this.multiplier);
 
                     //Detect config changes
-                    if (this.dayMinutes != Config.day_length_minutes.get() || this.nightMinutes != Config.night_length_minutes.get())
+                    if (this.daySeconds != Config.day_length_seconds.get() || this.nightSeconds != Config.night_length_seconds.get())
                     {
                         ServerTimeHandler.update(instance, level, level.getDayTime());
                     }
@@ -126,8 +126,8 @@ public final class ClientTimeHandler extends TimeHandler
         }
         else if (packet instanceof ConfigS2CPacket message)
         {
-            Config.day_length_minutes.set(message.day_length_minutes);
-            Config.night_length_minutes.set(message.night_length_minutes);
+            Config.day_length_seconds.set(message.day_length_seconds);
+            Config.night_length_seconds.set(message.night_length_seconds);
             Config.sync_to_system_time_rate.set(message.sync_to_system_time_rate);
             Config.sync_to_system_time.set(message.sync_to_system_time);
 

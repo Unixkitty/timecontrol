@@ -23,8 +23,8 @@ public class TimeControlCommand
         LiteralArgumentBuilder<CommandSourceStack> command = Commands.literal(TimeControl.MODID)
                 .requires(source -> source.hasPermission(2));
 
-        registerCommand(Config.day_length_minutes, command);
-        registerCommand(Config.night_length_minutes, command);
+        registerCommand(Config.day_length_seconds, command);
+        registerCommand(Config.night_length_seconds, command);
         registerCommand(Config.sync_to_system_time, command);
         registerCommand(Config.sync_to_system_time_rate, command);
 

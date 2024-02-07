@@ -16,8 +16,8 @@ public class Config
     public static JsonConfig.BooleanValue sync_to_system_time;
     public static JsonConfig.IntValue sync_to_system_time_rate;
 
-    public static JsonConfig.IntValue day_length_minutes;
-    public static JsonConfig.IntValue night_length_minutes;
+    public static JsonConfig.IntValue day_length_seconds;
+    public static JsonConfig.IntValue night_length_seconds;
     /* END ENTRIES */
 
     public static void load()
@@ -30,8 +30,8 @@ public class Config
             sync_to_system_time = CONFIG.defineValue("sync_to_system_time", false);
             sync_to_system_time_rate = CONFIG.defineInRange("sync_to_system_time_rate", 20, 1, 864000);
 
-            day_length_minutes = CONFIG.defineInRange("day_length_minutes", 10, 1, 178956);
-            night_length_minutes = CONFIG.defineInRange("night_length_minutes", 10, 1, 178956);
+            day_length_seconds = CONFIG.defineInRange("day_length_seconds", 600, 4, 10737360);
+            night_length_seconds = CONFIG.defineInRange("night_length_seconds", 600, 4, 10737360);
 
             debug = CONFIG.defineValue("debug", false);
         }

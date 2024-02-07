@@ -20,15 +20,15 @@ public abstract class TimeHandler
 
     /* Arbitrary time */
     protected boolean wasDaytime = true;
-    protected int dayMinutes = 0;
-    protected int nightMinutes = 0;
+    protected int daySeconds = 0;
+    protected int nightSeconds = 0;
 
     public static void update(TimeHandler timeHandler, @NotNull Level level, long worldtime)
     {
         timeHandler.update(level, Numbers.getCustomTime(worldtime), Numbers.getMultiplier(worldtime));
 
-        timeHandler.dayMinutes = Config.day_length_minutes.get();
-        timeHandler.nightMinutes = Config.night_length_minutes.get();
+        timeHandler.daySeconds = Config.day_length_seconds.get();
+        timeHandler.nightSeconds = Config.night_length_seconds.get();
     }
 
     public abstract void tick(@NotNull Level level);

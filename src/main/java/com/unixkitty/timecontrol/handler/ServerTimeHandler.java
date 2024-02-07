@@ -87,7 +87,7 @@ public final class ServerTimeHandler extends TimeHandler
                 if (serverLevel.getServer().getTickCount() % 20 == 0)
                 {
                     //Detect config changes
-                    if (this.dayMinutes != Config.day_length_minutes.get() || this.nightMinutes != Config.night_length_minutes.get())
+                    if (this.daySeconds != Config.day_length_seconds.get() || this.nightSeconds != Config.night_length_seconds.get())
                     {
                         TimeHandler.update(instance, serverLevel, serverLevel.getDayTime());
                     }
