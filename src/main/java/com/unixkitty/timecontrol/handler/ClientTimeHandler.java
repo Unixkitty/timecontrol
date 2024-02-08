@@ -37,7 +37,7 @@ public final class ClientTimeHandler extends TimeHandler
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event)
     {
-        if (event.phase == TickEvent.Phase.START && Minecraft.getInstance().level != null)
+        if (event.phase == TickEvent.Phase.START && Minecraft.getInstance().level != null && !Minecraft.getInstance().isPaused())
         {
             instance.tick(Minecraft.getInstance().level);
         }
