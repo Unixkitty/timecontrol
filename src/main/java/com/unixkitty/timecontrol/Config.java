@@ -14,7 +14,7 @@ public class Config
     static ForgeConfigSpec CLIENT_CONFIG;
 
     public static final int SYNC_TO_SYSTEM_TIME_RATE_LIMIT = 864000;
-    public static final int LENGTH_LIMIT = 178956;
+    public static final int LENGTH_LIMIT = 10737360;
 
     /* BEGIN ENTRIES */
     public static final String CATEGORY_MISC = "miscellaneous";
@@ -33,11 +33,11 @@ public class Config
 
     public static final String CATEGORY_ARBITRARY = "arbitrary_time";
 
-    public static final String DAY_LENGTH_MINUTES = "day_length_minutes";
-    public static ForgeConfigSpec.IntValue day_length_minutes;
+    public static final String DAY_LENGTH_SECONDS = "day_length_seconds";
+    public static ForgeConfigSpec.IntValue day_length_seconds;
 
-    public static final String NIGHT_LENGTH_MINUTES = "night_length_minutes";
-    public static ForgeConfigSpec.IntValue night_length_minutes;
+    public static final String NIGHT_LENGTH_SECONDS = "night_length_seconds";
+    public static ForgeConfigSpec.IntValue night_length_seconds;
     /* END ENTRIES */
 
     static
@@ -47,14 +47,14 @@ public class Config
         {
             config.push(CATEGORY_SYSTEM);
             sync_to_system_time = config.comment("Synchronize game world time with system time").define(SYNC_TO_SYSTEM_TIME, false);
-            sync_to_system_time_rate = config.comment("Sync time every n ticks").defineInRange(SYNC_TO_SYSTEM_TIME_RATE, 20, 1, SYNC_TO_SYSTEM_TIME_RATE_LIMIT);
+            sync_to_system_time_rate = config.comment("Indicates the rate at which time synchronization with the system occurs, measured in ticks").defineInRange(SYNC_TO_SYSTEM_TIME_RATE, 20, 1, SYNC_TO_SYSTEM_TIME_RATE_LIMIT);
             config.pop();
         }
 
         {
             config.push(CATEGORY_ARBITRARY);
-            day_length_minutes = config.comment("How long daytime lasts (0 - " + Numbers.HALF_DAY_TICKS + ")").defineInRange(DAY_LENGTH_MINUTES, 10, 1, LENGTH_LIMIT);
-            night_length_minutes = config.comment("How long nighttime lasts (" + Numbers.HALF_DAY_TICKS + " - 24000)").defineInRange(NIGHT_LENGTH_MINUTES, 10, 1, LENGTH_LIMIT);
+            day_length_seconds = config.comment("Specifies the duration in seconds for an in-game day, spanning from the 0th tick to the " + Numbers.HALF_DAY_TICKS + "th").defineInRange(DAY_LENGTH_SECONDS, 600, 4, LENGTH_LIMIT);
+            night_length_seconds = config.comment("Specifies the duration in seconds for an in-game night, spanning from the " + Numbers.HALF_DAY_TICKS + "th tick to the 0th").defineInRange(NIGHT_LENGTH_SECONDS, 600, 4, LENGTH_LIMIT);
             config.pop();
         }
 

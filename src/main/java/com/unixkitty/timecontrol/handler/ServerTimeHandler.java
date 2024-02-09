@@ -98,7 +98,7 @@ public final class ServerTimeHandler extends TimeHandler
                 if (serverLevel.getServer().getTickCount() % 20 == 0)
                 {
                     //Detect config changes
-                    if (this.dayMinutes != Config.day_length_minutes.get() || this.nightMinutes != Config.night_length_minutes.get())
+                    if (this.dayMinutes != Config.day_length_seconds.get() || this.nightMinutes != Config.night_length_seconds.get())
                     {
                         ServerTimeHandler.update(serverLevel.getDayTime());
                     }
@@ -231,7 +231,7 @@ public final class ServerTimeHandler extends TimeHandler
 
                 if (Config.sync_to_system_time.get())
                 {
-                    sender.sendFailure(new CommandRuntimeException(Component.translatable("text.timecontrol.change_time_when_system", action, time_string)).getComponent());
+                    sender.sendFailure(new CommandRuntimeException(Component.translatable("commands.timecontrol.change_time_when_system", action, time_string)).getComponent());
                     event.setCanceled(true);
 
                     return;
@@ -329,7 +329,7 @@ public final class ServerTimeHandler extends TimeHandler
     {
         instance.update(Numbers.getCustomTime(worldtime), Numbers.getMultiplier(worldtime));
 
-        instance.dayMinutes = Config.day_length_minutes.get();
-        instance.nightMinutes = Config.night_length_minutes.get();
+        instance.dayMinutes = Config.day_length_seconds.get();
+        instance.nightMinutes = Config.night_length_seconds.get();
     }
 }

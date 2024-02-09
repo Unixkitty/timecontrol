@@ -15,11 +15,12 @@ public class Numbers
     public static final long HALF_DAY_TICKS = DAY_TICKS / 2; //This also corresponds to when nighttime starts in vanilla
 
     private static final int real_life_hour_offset = 6;
-    private static final double real_life_minute_multiplier = 16.94;
     private static final int hours_per_day = 24;
     private static final int ticks_per_hour = (int) (DAY_TICKS / hours_per_day);
-    private static final int real_life_minute_is_ticks = 1200; //60 seconds * 20 ticks
-    private static final double vanilla_multiplier = HALF_DAY_TICKS / (double) real_life_minute_is_ticks;
+    private static final int real_life_second_is_ticks = 20;
+    private static final int real_life_minute_is_ticks = real_life_second_is_ticks * 60;
+    private static final double vanilla_multiplier = HALF_DAY_TICKS / (double) real_life_second_is_ticks;
+    private static final double real_life_minute_multiplier = real_life_minute_is_ticks / 72.0D; //Minecraft "time" is 72 times faster than IRL: 1440 IRL minutes / 20 (length of a Mineraft day in minutes)
 
     public static double getMultiplier(long worldtime)
     {
@@ -33,8 +34,12 @@ public class Numbers
 
     public static void setWorldtime(Level level, long customtime, double multiplier)
     {
+        setLevelDataWorldtime(level, getWorldtime(customtime, multiplier));
+    }
+
+    public static void setLevelDataWorldtime(Level level, long worldtime)
+    {
         LevelData worldInfo = level.getLevelData();
-        long worldtime = getWorldtime(customtime, multiplier);
 
         if (level.isClientSide && worldInfo instanceof ClientLevel.ClientLevelData)
         {
@@ -70,7 +75,7 @@ public class Numbers
 
     private static double getMultiplier(boolean day)
     {
-        return BigDecimal.valueOf((double) (day ? Config.day_length_minutes.get() : Config.night_length_minutes.get()) / vanilla_multiplier).setScale(2, RoundingMode.HALF_EVEN).doubleValue();
+        return BigDecimal.valueOf((double) (day ? Config.day_length_seconds.get() : Config.night_length_seconds.get()) / vanilla_multiplier).setScale(2, RoundingMode.HALF_EVEN).doubleValue();
     }
 
     //Because reasons

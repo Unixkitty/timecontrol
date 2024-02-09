@@ -23,8 +23,8 @@ public class TimeControlCommand
         LiteralArgumentBuilder<CommandSourceStack> command = Commands.literal(TimeControl.MODID)
                 .requires(source -> source.hasPermission(2));
 
-        registerCommand(Config.DAY_LENGTH_MINUTES, IntegerArgumentType.integer(1, Config.LENGTH_LIMIT), Config.day_length_minutes, command);
-        registerCommand(Config.NIGHT_LENGTH_MINUTES, IntegerArgumentType.integer(1, Config.LENGTH_LIMIT), Config.night_length_minutes, command);
+        registerCommand(Config.DAY_LENGTH_SECONDS, IntegerArgumentType.integer(1, Config.LENGTH_LIMIT), Config.day_length_seconds, command);
+        registerCommand(Config.NIGHT_LENGTH_SECONDS, IntegerArgumentType.integer(1, Config.LENGTH_LIMIT), Config.night_length_seconds, command);
         registerCommand(Config.SYNC_TO_SYSTEM_TIME, BoolArgumentType.bool(), Config.sync_to_system_time, command);
         registerCommand(Config.SYNC_TO_SYSTEM_TIME_RATE, IntegerArgumentType.integer(1, Config.SYNC_TO_SYSTEM_TIME_RATE_LIMIT), Config.sync_to_system_time_rate, command);
 
@@ -45,8 +45,8 @@ public class TimeControlCommand
 
         switch (name)
         {
-            case Config.DAY_LENGTH_MINUTES -> Config.day_length_minutes.set((Integer) value);
-            case Config.NIGHT_LENGTH_MINUTES -> Config.night_length_minutes.set((Integer) value);
+            case Config.DAY_LENGTH_SECONDS -> Config.day_length_seconds.set((Integer) value);
+            case Config.NIGHT_LENGTH_SECONDS -> Config.night_length_seconds.set((Integer) value);
             case Config.SYNC_TO_SYSTEM_TIME_RATE -> Config.sync_to_system_time_rate.set((Integer) value);
             case Config.SYNC_TO_SYSTEM_TIME -> Config.sync_to_system_time.set((Boolean) value);
         }
@@ -61,7 +61,7 @@ public class TimeControlCommand
 
     private static int sendFeedback(final CommandContext<CommandSourceStack> context, final String valueName, final Object value, boolean allowLogging)
     {
-        context.getSource().sendSuccess(() -> Component.literal(valueName + " = " + value), allowLogging);
+        context.getSource().sendSuccess(() -> Component.translatable("commands.timecontrol." + (allowLogging ? "set" : "query"), valueName, value), allowLogging);
 
         return 0;
     }

@@ -1,3 +1,5 @@
 {
-  "text.timecontrol.change_time_when_system": "Disable system time synchronization to %1$s %2$s!"
+  "commands.timecontrol.change_time_when_system": "Disable system time synchronization to %1$s %2$s!",
+  "commands.timecontrol.query": "%s is currently set to: %s",
+  "commands.timecontrol.set": "%s is now set to: %s"
 }
