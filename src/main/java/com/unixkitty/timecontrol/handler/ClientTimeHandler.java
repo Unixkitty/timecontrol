@@ -86,7 +86,7 @@ public final class ClientTimeHandler extends TimeHandler
                     //Detect config changes
                     if (this.daySeconds != Config.day_length_seconds.get() || this.nightSeconds != Config.night_length_seconds.get())
                     {
-                        ServerTimeHandler.update(instance, level, level.getDayTime());
+                        TimeHandler.update(instance, level, level.getDayTime());
                     }
                 }
 
