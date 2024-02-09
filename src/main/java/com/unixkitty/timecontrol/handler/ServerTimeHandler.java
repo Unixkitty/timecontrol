@@ -28,8 +28,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 import static net.minecraft.world.level.GameRules.RULE_DAYLIGHT;
@@ -159,17 +158,38 @@ public final class ServerTimeHandler extends TimeHandler
 
     private void syncTimeWithSystem(ServerLevel level)
     {
-        LocalTime now = LocalTime.now();
+        LocalDateTime now = LocalDateTime.now();
         int minute = now.getMinute();
 
         if (minute != this.lastMinute)
         {
             long worldTime = level.getDayTime();
             int hour = now.getHour();
-            int day = LocalDate.now().getDayOfYear();
+            int day = now.getDayOfYear();
+
+            final int _minute = minute;
+
+            double timeOffset = Config.sync_to_system_time_offset.get();
+
+            if (timeOffset != 0)
+            {
+                int offsetMinutes = (int) (timeOffset * 60);
+                LocalDateTime adjustedDateTime = now.plusMinutes(offsetMinutes);
+
+                if (adjustedDateTime.getDayOfYear() != day)
+                {
+                    day = adjustedDateTime.getDayOfYear();
+                }
+
+                hour = adjustedDateTime.getHour();
+                minute = adjustedDateTime.getMinute();
+
+                log.debug("Offsetting time sync by {} minutes", offsetMinutes);
+            }
+
             long time = Numbers.getSystemtimeTicks(hour, minute, day);
 
-            this.lastMinute = minute;
+            this.lastMinute = _minute;
 
             level.setDayTime(time);
 

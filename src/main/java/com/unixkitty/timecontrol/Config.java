@@ -30,6 +30,8 @@ public class Config
 
     public static final String SYNC_TO_SYSTEM_TIME_RATE = "sync_to_system_time_rate";
     public static ForgeConfigSpec.IntValue sync_to_system_time_rate;
+    public static final String SYNC_TO_SYSTEM_TIME_OFFSET = "sync_to_system_time_offset";
+    public static ForgeConfigSpec.ConfigValue<Double> sync_to_system_time_offset;
 
     public static final String CATEGORY_ARBITRARY = "arbitrary_time";
 
@@ -48,6 +50,7 @@ public class Config
             config.push(CATEGORY_SYSTEM);
             sync_to_system_time = config.comment("Synchronize game world time with system time").define(SYNC_TO_SYSTEM_TIME, false);
             sync_to_system_time_rate = config.comment("Indicates the rate at which time synchronization with the system occurs, measured in ticks").defineInRange(SYNC_TO_SYSTEM_TIME_RATE, 20, 1, SYNC_TO_SYSTEM_TIME_RATE_LIMIT);
+            sync_to_system_time_offset = config.comment("Controls the offset by which to shift the system time synchronization, must be in 0.5 increments").comment("Range: -23.0 ~ 23.0").defineInList(SYNC_TO_SYSTEM_TIME_OFFSET, 0D, Numbers.TIME_SHIFT_LIST);
             config.pop();
         }
 

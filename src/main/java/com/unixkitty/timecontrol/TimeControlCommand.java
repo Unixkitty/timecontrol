@@ -3,6 +3,7 @@ package com.unixkitty.timecontrol;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.arguments.BoolArgumentType;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -27,6 +28,7 @@ public class TimeControlCommand
         registerCommand(Config.NIGHT_LENGTH_SECONDS, IntegerArgumentType.integer(1, Config.LENGTH_LIMIT), Config.night_length_seconds, command);
         registerCommand(Config.SYNC_TO_SYSTEM_TIME, BoolArgumentType.bool(), Config.sync_to_system_time, command);
         registerCommand(Config.SYNC_TO_SYSTEM_TIME_RATE, IntegerArgumentType.integer(1, Config.SYNC_TO_SYSTEM_TIME_RATE_LIMIT), Config.sync_to_system_time_rate, command);
+        registerCommand(Config.SYNC_TO_SYSTEM_TIME_OFFSET, DoubleArgumentType.doubleArg(-Numbers.MAX_TIME_SHIFT, Numbers.MAX_TIME_SHIFT), Config.sync_to_system_time_offset, command);
 
         dispatcher.register(command);
     }
@@ -41,7 +43,12 @@ public class TimeControlCommand
 
     private static int setValue(CommandContext<CommandSourceStack> context, String name)
     {
-        Object value = Config.SYNC_TO_SYSTEM_TIME.equals(name) ? BoolArgumentType.getBool(context, value_string) : IntegerArgumentType.getInteger(context, value_string);
+        Object value = switch (name)
+        {
+            case Config.SYNC_TO_SYSTEM_TIME -> BoolArgumentType.getBool(context, value_string);
+            case Config.SYNC_TO_SYSTEM_TIME_OFFSET -> DoubleArgumentType.getDouble(context, value_string);
+            default -> IntegerArgumentType.getInteger(context, value_string);
+        };
 
         switch (name)
         {
@@ -49,6 +56,19 @@ public class TimeControlCommand
             case Config.NIGHT_LENGTH_SECONDS -> Config.night_length_seconds.set((Integer) value);
             case Config.SYNC_TO_SYSTEM_TIME_RATE -> Config.sync_to_system_time_rate.set((Integer) value);
             case Config.SYNC_TO_SYSTEM_TIME -> Config.sync_to_system_time.set((Boolean) value);
+            case Config.SYNC_TO_SYSTEM_TIME_OFFSET ->
+            {
+                if (Numbers.TIME_SHIFT_LIST.contains(value))
+                {
+                    Config.sync_to_system_time_offset.set((Double) value);
+                }
+                else
+                {
+                    context.getSource().sendFailure(Component.translatable("commands.timecontrol.sync_to_system_time_offset"));
+
+                    return 2;
+                }
+            }
         }
 
         //Manually sync config so that clients don't need to relogin

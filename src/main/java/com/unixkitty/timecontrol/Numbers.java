@@ -1,5 +1,6 @@
 package com.unixkitty.timecontrol;
 
+import it.unimi.dsi.fastutil.doubles.DoubleImmutableList;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.LevelData;
@@ -7,12 +8,16 @@ import net.minecraft.world.level.storage.PrimaryLevelData;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 public class Numbers
 {
     public static final long DAY_TICKS = 24000L;
     public static final long HALF_DAY_TICKS = DAY_TICKS / 2; //This also corresponds to when nighttime starts in vanilla
+    public static final double MAX_TIME_SHIFT = 23.0D;
+    public static final List<Double> TIME_SHIFT_LIST;
 
     private static final int real_life_hour_offset = 6;
     private static final int hours_per_day = 24;
@@ -21,6 +26,18 @@ public class Numbers
     private static final int real_life_minute_is_ticks = real_life_second_is_ticks * 60;
     private static final double vanilla_multiplier = HALF_DAY_TICKS / (double) real_life_second_is_ticks;
     private static final double real_life_minute_multiplier = real_life_minute_is_ticks / 72.0D; //Minecraft "time" is 72 times faster than IRL: 1440 IRL minutes / 20 (length of a Mineraft day in minutes)
+
+    static
+    {
+        List<Double> tempList = new ArrayList<>();
+
+        for (double i = -MAX_TIME_SHIFT; i <= MAX_TIME_SHIFT; i += 0.5D)
+        {
+            tempList.add(i);
+        }
+
+        TIME_SHIFT_LIST = new DoubleImmutableList(tempList);
+    }
 
     public static double getMultiplier(long worldtime)
     {
