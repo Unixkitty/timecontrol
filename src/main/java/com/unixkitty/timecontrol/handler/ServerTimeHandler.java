@@ -167,6 +167,8 @@ public final class ServerTimeHandler extends TimeHandler
             int hour = now.getHour();
             int day = now.getDayOfYear();
 
+            final int _day = day;
+            final int _hour = hour;
             final int _minute = minute;
 
             double timeOffset = Config.sync_to_system_time_offset.get();
@@ -183,8 +185,6 @@ public final class ServerTimeHandler extends TimeHandler
 
                 hour = adjustedDateTime.getHour();
                 minute = adjustedDateTime.getMinute();
-
-                log.debug("Offsetting time sync by {} minutes", offsetMinutes);
             }
 
             long time = Numbers.getSystemtimeTicks(hour, minute, day);
@@ -195,7 +195,11 @@ public final class ServerTimeHandler extends TimeHandler
 
             if (Config.debug.get())
             {
-                log.debug("System time update: {} -> {} | day {}, {}", worldTime, time, day, String.format("%02d:%02d", hour, minute));
+                log.debug("System time update: {} -> {} | day {}, {} | system: day {}, {}, offset: {}",
+                        worldTime, time,
+                        day, String.format("%02d:%02d", hour, minute),
+                        _day, String.format("%02d:%02d", _hour, _minute),
+                        timeOffset);
             }
         }
     }
