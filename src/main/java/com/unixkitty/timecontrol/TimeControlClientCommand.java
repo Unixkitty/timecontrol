@@ -7,12 +7,13 @@ import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.unixkitty.timecontrol.config.Config;
 import com.unixkitty.timecontrol.config.json.JsonConfig;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.Minecraft;
-import net.minecraft.commands.CommandRuntimeException;
 import net.minecraft.commands.arguments.TimeArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.GameRules;
@@ -66,12 +67,12 @@ public class TimeControlClientCommand
         return time;
     }
 
-    private static int updateTime(CommandContext<FabricClientCommandSource> context, int time)
+    private static int updateTime(CommandContext<FabricClientCommandSource> context, int time) throws CommandSyntaxException
     {
         return updateTime(context, time, false);
     }
 
-    private static int updateTime(CommandContext<FabricClientCommandSource> context, int time, boolean addTime)
+    private static int updateTime(CommandContext<FabricClientCommandSource> context, int time, boolean addTime) throws CommandSyntaxException
     {
         if (!Config.ignore_server.get())
         {
@@ -80,7 +81,7 @@ public class TimeControlClientCommand
 
         if (Config.sync_to_system_time.get())
         {
-            throw new CommandRuntimeException(Component.translatable("commands.timecontrol.change_time_when_system", addTime ? "add" : "set", "time"));
+            throw new SimpleCommandExceptionType(Component.translatable("commands.timecontrol.change_time_when_system", addTime ? "add" : "set", "time")).create();
         }
 
         Level level = context.getSource().getWorld();
@@ -220,7 +221,7 @@ public class TimeControlClientCommand
 
     private static int sendFeedback(final CommandContext<FabricClientCommandSource> context, String valueName, Object value, boolean valueChanged)
     {
-        context.getSource().sendFeedback(Component.translatable("commands.timecontrol." + (valueChanged ? "set" : "query"), valueName, value));
+        context.getSource().sendFeedback(Component.translatable("commands.timecontrol." + (valueChanged ? "set" : "query"), valueName, String.valueOf(value)));
 
         return 0;
     }

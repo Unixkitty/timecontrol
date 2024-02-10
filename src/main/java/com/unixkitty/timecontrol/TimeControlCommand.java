@@ -115,7 +115,7 @@ public class TimeControlCommand
 
     private static int sendFeedback(final CommandContext<CommandSourceStack> context, final JsonConfig.Value<?> configValue, boolean allowLogging)
     {
-        context.getSource().sendSuccess(() -> Component.translatable("commands.timecontrol." + (allowLogging ? "set" : "query"), configValue.getName(), configValue.get()), allowLogging);
+        context.getSource().sendSuccess(() -> Component.translatable("commands.timecontrol." + (allowLogging ? "set" : "query"), configValue.getName(), String.valueOf(configValue.get())), allowLogging);
 
         return 0;
     }
