@@ -16,12 +16,15 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("unused")
 public class JsonConfig implements AutoCloseable
@@ -113,6 +116,11 @@ public class JsonConfig implements AutoCloseable
         return new BooleanValue(key, defaultValue);
     }
 
+    public <V> Value<V> defineInList(String key, V defaultValue, Collection<? extends V> acceptableValues)
+    {
+        return checkContains(new CollectionValue<>(key, defaultValue, acceptableValues), acceptableValues);
+    }
+
     public IntValue defineInRange(String key, int defaultValue, int min, int max)
     {
         return (IntValue) checkRange(new IntValue(key, defaultValue, min, max), defaultValue);
@@ -191,11 +199,21 @@ public class JsonConfig implements AutoCloseable
         }
     }
 
-    private <N extends Number> NumberValue<N> checkRange(NumberValue<N> numberValue, N value)
+    private <V> Value<V> checkContains(Value<V> value, Collection<? extends V> acceptableValues)
     {
-        if (numberValue.isValueOutsideRange(value))
+        if (!acceptableValues.contains(value.defaultValue))
         {
-            throw new IllegalArgumentException(getOutOfRangeMessage(value, numberValue));
+            throw new IllegalArgumentException(unacceptableValueMessage(value.defaultValue, value, acceptableValues));
+        }
+
+        return value;
+    }
+
+    private <N extends Number> NumberValue<N> checkRange(NumberValue<N> numberValue, N defaultValue)
+    {
+        if (numberValue.isValueOutsideRange(defaultValue))
+        {
+            throw new IllegalArgumentException(getOutOfRangeMessage(defaultValue, numberValue));
         }
 
         return numberValue;
@@ -203,7 +221,12 @@ public class JsonConfig implements AutoCloseable
 
     private <N extends Number> String getOutOfRangeMessage(N value, NumberValue<N> numberValue)
     {
-        return "Value in " + this.fileName + " for " + numberValue.getName() + " is outside of specified range: " + value + " (" + numberValue.min + ", " + numberValue.max + ")";
+        return "Value \"" + value + "\" in " + this.fileName + " for " + numberValue.getName() + " is outside of specified range: (" + numberValue.min + ", " + numberValue.max + ")";
+    }
+
+    private String unacceptableValueMessage(Object value, Value<?> configValue, Collection<?> acceptableValues)
+    {
+        return "Value \"" + value + "\" in " + this.fileName + " for " + configValue.getName() + " is not one of the allowed values: [ " + acceptableValues.stream().map(Object::toString).collect(Collectors.joining(", ")) + " ]";
     }
 
     private void _save() throws Exception
@@ -252,7 +275,7 @@ public class JsonConfig implements AutoCloseable
         {
         }.getType());
 
-        if (map != null && map.size() > 0)
+        if (map != null && !map.isEmpty())
         {
             for (String key : this.config.keySet())
             {
@@ -567,6 +590,35 @@ public class JsonConfig implements AutoCloseable
         private FloatValue(String key, float defaultValue, float min, float max)
         {
             super(key, defaultValue, min, max);
+        }
+    }
+
+    public class CollectionValue<V> extends Value<V>
+    {
+        private final Collection<?> collection;
+        private final Predicate<Object> validator;
+
+        private CollectionValue(String key, V defaultValue, Collection<? extends V> collection)
+        {
+            super(key, defaultValue);
+
+            this.collection = collection;
+            this.validator = this.collection::contains;
+        }
+
+        @Override
+        protected void load(Object value)
+        {
+            if (!validator.test(value))
+            {
+                JsonConfig.this.log.warn(unacceptableValueMessage(value, this, this.collection) + ", using default: " + this.defaultValue);
+
+                value = this.defaultValue;
+
+                JsonConfig.this.state = State.NEEDS_SAVING;
+            }
+
+            super.load(value);
         }
     }
 }

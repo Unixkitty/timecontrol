@@ -3,6 +3,7 @@ package com.unixkitty.timecontrol;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.arguments.BoolArgumentType;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -11,6 +12,7 @@ import com.unixkitty.timecontrol.config.json.JsonConfig;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.Minecraft;
+import net.minecraft.commands.CommandRuntimeException;
 import net.minecraft.commands.arguments.TimeArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.GameRules;
@@ -27,6 +29,7 @@ public class TimeControlClientCommand
         registerCommand(Config.night_length_seconds, command);
         registerCommand(Config.sync_to_system_time, command);
         registerCommand(Config.sync_to_system_time_rate, command);
+        registerCommand(Config.sync_to_system_time_offset, command);
 
         //Other commands to do vanilla things to client time
         registerGamerule(TimeControl.DO_DAYLIGHT_CYCLE_TC, command);
@@ -35,18 +38,18 @@ public class TimeControlClientCommand
         command.then(ClientCommandManager.literal("time")
                 .then((ClientCommandManager.literal("set")
                         .then(ClientCommandManager.literal("day")
-                                .executes((context) -> setTime(context.getSource(), 1000))))
+                                .executes((context) -> updateTime(context, 1000))))
                         .then(ClientCommandManager.literal("noon")
-                                .executes((context) -> setTime(context.getSource(), 6000)))
+                                .executes((context) -> updateTime(context, 6000)))
                         .then(ClientCommandManager.literal("night")
-                                .executes((context) -> setTime(context.getSource(), 13000)))
+                                .executes((context) -> updateTime(context, 13000)))
                         .then(ClientCommandManager.literal("midnight")
-                                .executes((context) -> setTime(context.getSource(), 18000)))
+                                .executes((context) -> updateTime(context, 18000)))
                         .then(ClientCommandManager.argument("time", TimeArgument.time())
-                                .executes((context) -> setTime(context.getSource(), IntegerArgumentType.getInteger(context, "time")))))
+                                .executes((context) -> updateTime(context, IntegerArgumentType.getInteger(context, "time")))))
                 .then(ClientCommandManager.literal("add")
                         .then(ClientCommandManager.argument("time", TimeArgument.time())
-                                .executes((context) -> addTime(context.getSource(), IntegerArgumentType.getInteger(context, "time")))))
+                                .executes((context) -> updateTime(context, IntegerArgumentType.getInteger(context, "time"), true))))
                 .then((ClientCommandManager.literal("query")
                         .then(ClientCommandManager.literal("daytime")
                                 .executes((context) -> queryTime(context.getSource(), getDayTime(context.getSource().getWorld())))))
@@ -63,26 +66,30 @@ public class TimeControlClientCommand
         return time;
     }
 
-    public static int setTime(FabricClientCommandSource source, int time)
+    private static int updateTime(CommandContext<FabricClientCommandSource> context, int time)
     {
-        Numbers.setLevelDataWorldtime(source.getWorld(), time);
-
-        int i = getDayTime(source.getWorld());
-
-        source.sendFeedback(Component.translatable("commands.time.set", i));
-
-        return i;
+        return updateTime(context, time, false);
     }
 
-    public static int addTime(FabricClientCommandSource source, int time)
+    private static int updateTime(CommandContext<FabricClientCommandSource> context, int time, boolean addTime)
     {
-        Numbers.setLevelDataWorldtime(source.getWorld(), source.getWorld().getDayTime() + (long) time);
+        if (!Config.ignore_server.get())
+        {
+            return ignoreServerError(context);
+        }
 
-        int i = getDayTime(source.getWorld());
+        if (Config.sync_to_system_time.get())
+        {
+            throw new CommandRuntimeException(Component.translatable("commands.timecontrol.change_time_when_system", addTime ? "add" : "set", "time"));
+        }
 
-        source.sendFeedback(Component.translatable("commands.time.set", i));
+        Level level = context.getSource().getWorld();
 
-        return i;
+        Numbers.setLevelDataWorldtime(level, addTime ? level.getDayTime() + (long) time : (long) time);
+
+        context.getSource().sendFeedback(Component.translatable("commands.time.set", getDayTime(level)));
+
+        return 0;
     }
 
     private static int getDayTime(Level level)
@@ -133,6 +140,10 @@ public class TimeControlClientCommand
         {
             argument = IntegerArgumentType.integer((int) numberValue.getMin(), (int) numberValue.getMax());
         }
+        else if (configValue == Config.sync_to_system_time_offset)
+        {
+            argument = DoubleArgumentType.doubleArg(-Numbers.MAX_TIME_SHIFT, Numbers.MAX_TIME_SHIFT);
+        }
 
         if (argument != null)
         {
@@ -164,6 +175,26 @@ public class TimeControlClientCommand
             int newValue = IntegerArgumentType.getInteger(context, TimeControlCommand.value_string);
 
             ((JsonConfig.Value<Integer>) configValue).set(newValue);
+        }
+        else if (configValue.getValueClass().equals(Double.class))
+        {
+            double newValue = DoubleArgumentType.getDouble(context, TimeControlCommand.value_string);
+
+            if (configValue == Config.sync_to_system_time_offset)
+            {
+                if (Numbers.TIME_SHIFT_LIST.contains(newValue))
+                {
+                    Config.sync_to_system_time_offset.set(newValue);
+                }
+                else
+                {
+                    context.getSource().sendError(Component.translatable("commands.timecontrol.sync_to_system_time_offset"));
+
+                    return 2;
+                }
+            }
+
+            ((JsonConfig.Value<Double>) configValue).set(newValue);
         }
         else
         {

@@ -3,6 +3,7 @@ package com.unixkitty.timecontrol;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.arguments.BoolArgumentType;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -27,6 +28,7 @@ public class TimeControlCommand
         registerCommand(Config.night_length_seconds, command);
         registerCommand(Config.sync_to_system_time, command);
         registerCommand(Config.sync_to_system_time_rate, command);
+        registerCommand(Config.sync_to_system_time_offset, command);
 
         dispatcher.register(command);
     }
@@ -42,6 +44,10 @@ public class TimeControlCommand
         else if (configValue instanceof JsonConfig.NumberValue<?> numberValue && numberValue.getValueClass().equals(Integer.class))
         {
             argument = IntegerArgumentType.integer((int) numberValue.getMin(), (int) numberValue.getMax());
+        }
+        else if (configValue == Config.sync_to_system_time_offset)
+        {
+            argument = DoubleArgumentType.doubleArg(-Numbers.MAX_TIME_SHIFT, Numbers.MAX_TIME_SHIFT);
         }
 
         if (argument != null)
@@ -69,6 +75,26 @@ public class TimeControlCommand
             int newValue = IntegerArgumentType.getInteger(context, value_string);
 
             ((JsonConfig.Value<Integer>) configValue).set(newValue);
+        }
+        else if (configValue.getValueClass().equals(Double.class))
+        {
+            double newValue = DoubleArgumentType.getDouble(context, value_string);
+
+            if (configValue == Config.sync_to_system_time_offset)
+            {
+                if (Numbers.TIME_SHIFT_LIST.contains(newValue))
+                {
+                    Config.sync_to_system_time_offset.set(newValue);
+                }
+                else
+                {
+                    context.getSource().sendFailure(Component.translatable("commands.timecontrol.sync_to_system_time_offset"));
+
+                    return 2;
+                }
+            }
+
+            ((JsonConfig.Value<Double>) configValue).set(newValue);
         }
         else
         {
