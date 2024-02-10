@@ -9,6 +9,7 @@ public class ConfigS2CPacket extends BasePacket
     public final int night_length_seconds;
     public final int sync_to_system_time_rate;
     public final boolean sync_to_system_time;
+    public final double sync_to_system_time_offset;
 
     public ConfigS2CPacket()
     {
@@ -16,6 +17,7 @@ public class ConfigS2CPacket extends BasePacket
         this.night_length_seconds = Config.night_length_seconds.get();
         this.sync_to_system_time_rate = Config.sync_to_system_time_rate.get();
         this.sync_to_system_time = Config.sync_to_system_time.get();
+        this.sync_to_system_time_offset = Config.sync_to_system_time_offset.get();
     }
 
     public ConfigS2CPacket(FriendlyByteBuf buffer)
@@ -24,6 +26,7 @@ public class ConfigS2CPacket extends BasePacket
         this.night_length_seconds = buffer.readInt();
         this.sync_to_system_time_rate = buffer.readInt();
         this.sync_to_system_time = buffer.readBoolean();
+        this.sync_to_system_time_offset = buffer.readDouble();
     }
 
     @Override
@@ -33,6 +36,7 @@ public class ConfigS2CPacket extends BasePacket
         buffer.writeInt(this.night_length_seconds);
         buffer.writeInt(this.sync_to_system_time_rate);
         buffer.writeBoolean(this.sync_to_system_time);
+        buffer.writeDouble(this.sync_to_system_time_offset);
 
         return buffer;
     }

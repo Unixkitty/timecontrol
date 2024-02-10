@@ -2,5 +2,6 @@
   "commands.timecontrol.change_time_when_system": "Disable system time synchronization to %1$s %2$s!",
   "commands.timecontrol.query": "%s is currently set to: %s",
   "commands.timecontrol.set": "%s is now set to: %s",
+  "commands.timecontrol.sync_to_system_time_offset": "System sync offset must be a double in increments of 0.5!",
   "commands.timecontrol.client_not_ignoring_server": "Set %s to 'true' to control client time and config independently from server!"
 }

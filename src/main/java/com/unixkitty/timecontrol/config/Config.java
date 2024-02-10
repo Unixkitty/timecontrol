@@ -1,5 +1,6 @@
 package com.unixkitty.timecontrol.config;
 
+import com.unixkitty.timecontrol.Numbers;
 import com.unixkitty.timecontrol.TimeControl;
 import com.unixkitty.timecontrol.config.json.JsonConfig;
 
@@ -15,6 +16,7 @@ public class Config
     public static JsonConfig.BooleanValue ignore_server;
     public static JsonConfig.BooleanValue sync_to_system_time;
     public static JsonConfig.IntValue sync_to_system_time_rate;
+    public static JsonConfig.Value<Double> sync_to_system_time_offset;
 
     public static JsonConfig.IntValue day_length_seconds;
     public static JsonConfig.IntValue night_length_seconds;
@@ -29,6 +31,7 @@ public class Config
             ignore_server = CONFIG.defineValue("ignore_server", false);
             sync_to_system_time = CONFIG.defineValue("sync_to_system_time", false);
             sync_to_system_time_rate = CONFIG.defineInRange("sync_to_system_time_rate", 20, 1, 864000);
+            sync_to_system_time_offset = CONFIG.defineInList("sync_to_system_time_offset", 0D, Numbers.TIME_SHIFT_LIST);
 
             day_length_seconds = CONFIG.defineInRange("day_length_seconds", 600, 4, 10737360);
             night_length_seconds = CONFIG.defineInRange("night_length_seconds", 600, 4, 10737360);

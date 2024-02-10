@@ -1,17 +1,19 @@
 package com.unixkitty.timecontrol.handler;
 
 import com.unixkitty.timecontrol.Numbers;
-import com.unixkitty.timecontrol.TimeControl;
 import com.unixkitty.timecontrol.config.Config;
 import net.minecraft.world.level.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 
 public abstract class TimeHandler
 {
+    private static final Logger log = LogManager.getLogger(TimeHandler.class.getSimpleName());
+
     protected long customtime;
     protected double multiplier;
 
@@ -41,23 +43,48 @@ public abstract class TimeHandler
 
     protected void syncTimeWithSystem(@NotNull Level level)
     {
-        LocalTime now = LocalTime.now();
+        LocalDateTime now = LocalDateTime.now();
         int minute = now.getMinute();
 
         if (minute != this.lastMinute)
         {
             long worldTime = level.getDayTime();
             int hour = now.getHour();
-            int day = LocalDate.now().getDayOfYear();
+            int day = now.getDayOfYear();
+
+            final int _day = day;
+            final int _hour = hour;
+            final int _minute = minute;
+
+            double timeOffset = Config.sync_to_system_time_offset.get();
+
+            if (timeOffset != 0)
+            {
+                int offsetMinutes = (int) (timeOffset * 60);
+                LocalDateTime adjustedDateTime = now.plusMinutes(offsetMinutes);
+
+                if (adjustedDateTime.getDayOfYear() != day)
+                {
+                    day = adjustedDateTime.getDayOfYear();
+                }
+
+                hour = adjustedDateTime.getHour();
+                minute = adjustedDateTime.getMinute();
+            }
+
             long time = Numbers.getSystemtimeTicks(hour, minute, day);
 
-            this.lastMinute = minute;
+            this.lastMinute = _minute;
 
             Numbers.setLevelDataWorldtime(level, time);
 
             if (Config.debug.get())
             {
-                TimeControl.LOG.debug("System time update: {} -> {} | day {}, {}", worldTime, time, day, String.format("%02d:%02d", hour, minute));
+                log.debug("System time update: {} -> {} | day {}, {} | system: day {}, {}, offset: {}",
+                        worldTime, time,
+                        day, String.format("%02d:%02d", hour, minute),
+                        _day, String.format("%02d:%02d", _hour, _minute),
+                        timeOffset);
             }
         }
     }
