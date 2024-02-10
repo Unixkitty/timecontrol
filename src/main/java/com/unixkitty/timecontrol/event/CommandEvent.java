@@ -41,7 +41,7 @@ public class CommandEvent extends Event
         return super.execute();
     }
 
-    public static void onCommand(ParseResults<CommandSourceStack> parseResults) throws Exception
+    public static int onCommand(ParseResults<CommandSourceStack> parseResults) throws Exception
     {
         CommandEvent event = new CommandEvent(parseResults);
 
@@ -55,6 +55,10 @@ public class CommandEvent extends Event
             {
                 Throwables.throwIfUnchecked(event.getException());
             }
+
+            return 1;
         }
+
+        return 0;
     }
 }
